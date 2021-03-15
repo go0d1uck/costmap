@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -shared -Wl,-soname,libcostmap.so -o libcostmap.so CMakeFiles/costmap.dir/src/layer.cc.o CMakeFiles/costmap.dir/src/layered.cc.o 
