@@ -1,4 +1,0 @@
-/home/antraume/costmap/build/CMakeFiles/rebuild_cache.dir
-/home/antraume/costmap/build/CMakeFiles/edit_cache.dir
-/home/antraume/costmap/build/CMakeFiles/test.dir
-/home/antraume/costmap/build/CMakeFiles/costmap.dir
