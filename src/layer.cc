@@ -1,6 +1,7 @@
 #include "layer.h"
 #include <ostream>
 #include <vector>
+#include <glog/logging.h>
 namespace costmap_2d {
 Layer::Layer(std::string name, double robot_x, double robot_y, double robot_yaw, double size)
     : name_(name)
@@ -20,6 +21,7 @@ void Layer::Update(std::vector<std::vector<bool>>& grid_map, double robot_x, dou
 void Layer::ResetGridMap()
 {
     int idx = size_ / resolution_;
+    /** @brief add one pixel to avoid coredump */
     idx += 1;
     grid_map_.resize(idx);
     for (int i = 0; i < idx; i++) {
@@ -29,6 +31,7 @@ void Layer::ResetGridMap()
 }
 void Layer::UpdateOrigin(double new_x, double new_y)
 {
+    LOG(INFO) << name_ << " is updating origin...";
     /** @brief calculate  offset*/
     int offset_x = (origin_x_ - new_x) / resolution_;
     int offset_y = (origin_y_ - new_y) / resolution_;
@@ -53,5 +56,6 @@ void Layer::UpdateOrigin(double new_x, double new_y)
             }
         }
     }
+    LOG(INFO) << name_ << " origin is updated";
 }
 }
