@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
 
 include_directories(include)
-add_library(costmap SHARED src/layer.cc src/costmap.cc)
+link_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(test ${PROJECT_SOURCE_DIR}/test.cc)
 target_link_libraries(test PUBLIC costmap)
+add_library(costmap SHARED src/layer.cc src/costmap.cc)
