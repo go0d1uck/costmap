@@ -1,16 +1,19 @@
 #include "layer.h"
+#include <glog/logging.h>
 #include <ostream>
 #include <vector>
-#include <glog/logging.h>
 namespace costmap_2d {
 Layer::Layer(std::string name, double robot_x, double robot_y, double robot_yaw, double size)
     : name_(name)
     , size_(size)
+    , resolution_(0.05)
 {
     origin_x_ = robot_x - size / 2;
     origin_y_ = robot_y - size / 2;
     /** @brief resolution_ need read from config.yaml */
-    resolution_ = 0.05;
+    int limit_grid = size / resolution_;
+    limit_grid++;
+    grid_map_ = std::vector<std::vector<bool>>(limit_grid,std::vector<bool>(limit_grid,false));
 }
 void Layer::Update(std::vector<std::vector<bool>>& grid_map, double robot_x, double robot_y)
 {
@@ -20,14 +23,10 @@ void Layer::Update(std::vector<std::vector<bool>>& grid_map, double robot_x, dou
 }
 void Layer::ResetGridMap()
 {
-    int idx = size_ / resolution_;
-    /** @brief add one pixel to avoid coredump */
-    idx += 1;
-    grid_map_.resize(idx);
-    for (int i = 0; i < idx; i++) {
-        grid_map_[i].resize(idx, false);
+    for(auto it = grid_map_.begin();it!= grid_map_.end();it++)
+    {
+        fill(it->begin(),it->end(),false);
     }
-    /** @brief translate coordinate */
 }
 void Layer::UpdateOrigin(double new_x, double new_y)
 {

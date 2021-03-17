@@ -24,7 +24,7 @@ class Layer {
   double getSize() const { return size_; }
   double getOriginX() const { return origin_x_; }
   double getOriginY() const { return origin_y_; }
-  int getResolution() const { return resolution_; }
+  double getResolution() const { return resolution_; }
   int getXInMap() const {return origin_x_*100/resolution_;}
   int getYInMap() const {return origin_y_*100/resolution_;}
   std::string getName() const { return name_; }
