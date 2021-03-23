@@ -1,0 +1,5 @@
+%YAML 1.2
+---
+inscribed_radius: 0.25
+inflation_weight: 5
+inflation_radius: 2

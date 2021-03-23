@@ -1,12 +1,29 @@
 #include "costmap.h"
 #include "layer.h"
+#include <exception>
 #include <glog/logging.h>
 #include <new>
+#include <opencv2/core/persistence.hpp>
+#include <opencv4/opencv2/opencv.hpp>
+#include <queue>
 #include <vector>
 namespace costmap_2d {
-Costmap::Costmap(double robot_x, double robot_y, double robot_yaw, double size)
+Costmap::Costmap(double robot_x, double robot_y, double robot_yaw, double size, std::string file_name)
 {
   LOG(INFO) << "Start initing CostMap";
+  cv::FileStorage fs;
+  try {
+    LOG(INFO) << "Read config";
+    fs.open(file_name, cv::FileStorage::READ);
+    fs["inflation_weight"] >> inflation_weight_;
+    fs["inflation_radius"] >> inflation_radius_;
+    fs["inscribed_radius"] >> inscribed_radius_;
+    LOG(INFO) << "Set config ok";
+  } catch (std::exception) {
+    LOG(ERROR) << "Read config error!";
+    throw;
+  }
+  fs.release();
   try {
     pLayered_ = std::shared_ptr<Layer>(new Layer("layered", robot_x, robot_y, robot_yaw, size));
   } catch (const std::bad_alloc& e) {
@@ -70,55 +87,72 @@ std::vector<std::vector<bool>> Costmap::GetLayeredMap(double new_origin_x, doubl
 void Costmap::Inflation(std::vector<std::vector<unsigned char>>& return_costmap)
 {
   LOG(INFO) << "Start inflation";
-  int grid_inscribed_dis = INSCRIBED_RADIUS / pLayered_->getResolution();
+  int grid_inscribed_dis = inscribed_radius_ / pLayered_->getResolution();
   int limit = pLayered_->getMap().size();
   grid_inscribed_dis++;
   std::vector<std::vector<bool>> seen(limit, std::vector<bool>(limit, false));
-  return_costmap.resize(limit);
-  for (auto it = return_costmap.begin(); it != return_costmap.end(); it++)
-    it->resize(limit);
-  std::queue<Cell> q; /** @brief need inflation queue */
+  return_costmap = std::vector<std::vector<unsigned char>>(limit, std::vector<unsigned char>(limit, 0));
+  std::priority_queue<Cell> que;
   std::vector<std::vector<bool>> local_map = pLayered_->getMap();
   LOG(INFO) << "Inflation initialized";
+  /** @brief convert occupied to cosmap obstacle */
   for (int i = 0; i < limit; i++) {
     for (int j = 0; j < limit; j++) {
       if (local_map[i][j]) {
         return_costmap[i][j] = LETHAL_OBSTACLE;
-        q.push(Cell(i, j, i, j));
+        que.push(Cell(i, j, i, j, 0)); /** @brief push into queue */
         seen[i][j] = true;
       }
     }
   }
-  while (!q.empty()) {
-    const Cell& cell_data = q.front();
-    q.pop();
-    if (cell_data.mx > 0 && !seen[cell_data.mx - 1][cell_data.my]) {
-      q.push(Cell(cell_data.mx - 1, cell_data.my, cell_data.src_x, cell_data.src_y));
-      seen[cell_data.mx - 1][cell_data.my] = true;
-    }
-    if (cell_data.my > 0 && !seen[cell_data.mx][cell_data.my - 1]) {
-      q.push(Cell(cell_data.mx, cell_data.my - 1, cell_data.src_x, cell_data.src_y));
-      seen[cell_data.mx][cell_data.my - 1] = true;
-    }
-    if (cell_data.mx < limit - 1 && !seen[cell_data.mx + 1][cell_data.my]) {
-      q.push(Cell(cell_data.mx + 1, cell_data.my, cell_data.src_x, cell_data.src_y));
-      seen[cell_data.mx + 1][cell_data.my] = true;
-    }
-    if (cell_data.my < limit - 1 && !seen[cell_data.mx][cell_data.my + 1]) {
-      q.push(Cell(cell_data.mx, cell_data.my + 1, cell_data.src_x, cell_data.src_y));
-      seen[cell_data.mx][cell_data.my + 1] = true;
-    }
-    /** @brief choose big cost */
-    return_costmap[cell_data.mx][cell_data.my] = std::max(return_costmap[cell_data.mx][cell_data.my], GetCost(cell_data.mx, cell_data.my, cell_data.src_x, cell_data.src_y));
+  while (!que.empty()) {
+    const Cell& t = que.top();
+    if (t.dis != 0)
+      return_costmap[t.mx][t.my] = GetCost(t);
+    que.pop();
+    if (t.mx > 0)
+      EnQueue(t.mx - 1, t.my, t.src_x, t.src_y, seen, que, return_costmap);
+    if (t.my > 0)
+      EnQueue(t.mx, t.my - 1, t.src_x, t.src_y, seen, que, return_costmap);
+    if (t.mx < limit - 1)
+      EnQueue(t.mx + 1, t.my, t.src_x, t.src_y, seen, que, return_costmap);
+    if (t.my < limit - 1)
+      EnQueue(t.mx, t.my + 1, t.src_x, t.src_y, seen, que, return_costmap);
   }
 }
-std::vector<std::vector<unsigned char>> Costmap::GetCostMap(double robot_x, double robot_y, double robot_yaw)
+void Costmap::UpdateCostMap(double robot_x, double robot_y, double robot_yaw)
 {
   std::vector<std::vector<unsigned char>> local_map;
   double new_origin_x = robot_x - pLayered_->getSize() / 2;
   double new_origin_y = robot_y - pLayered_->getSize() / 2;
   GetLayeredMap(new_origin_x, new_origin_y);
   Inflation(local_map);
-  return local_map;
+  costmap_need_ = local_map;
+  return;
+}
+void Costmap::EnQueue(int x, int y, int src_x, int src_y, std::vector<std::vector<bool>>& seen, std::priority_queue<Cell>& q, std::vector<std::vector<unsigned char>>& cost_map)
+{
+  Cell t(x, y, src_x, src_y, 0);
+  GetDistanceIngrid(t);
+  if (t.dis * pLayered_->getResolution() > inflation_radius_)
+    return; /** @brief out of range */
+  unsigned char cost = GetCost(t);
+  if (!seen[x][y]) {
+    q.push(t);
+    seen[x][y] = true;
+  }
+}
+unsigned char Costmap::GetCellCost(double x, double y)
+{
+  int ox = pLayered_->getXInMap();
+  int oy = pLayered_->getYInMap();
+  int new_x = x / pLayered_->getResolution();
+  int new_y = y / pLayered_->getResolution();
+  int cost_x = new_x - ox;
+  int cost_y = new_y - oy;
+  if (cost_x < 0 || cost_y < 0 || cost_x >= costmap_need_.size() || cost_x >= costmap_need_.size())
+    return LETHAL_OBSTACLE;
+  else
+    return costmap_need_[cost_x][cost_y];
 }
 } // end namespace costmap_2d

@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#define RESOLUTION 0.05
 namespace costmap_2d {
 
 class Layer {
@@ -25,8 +26,8 @@ class Layer {
   double getOriginX() const { return origin_x_; }
   double getOriginY() const { return origin_y_; }
   double getResolution() const { return resolution_; }
-  int getXInMap() const {return origin_x_*100/resolution_;}
-  int getYInMap() const {return origin_y_*100/resolution_;}
+  int getXInMap() const {return origin_x_/resolution_;}
+  int getYInMap() const {return origin_y_/resolution_;}
   std::string getName() const { return name_; }
   /** @brief Update layer */
   void Update(std::vector<std::vector<bool>>& grid_map, double robot_x, double robot_y);
