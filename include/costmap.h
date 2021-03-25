@@ -7,6 +7,7 @@
 #include <glog/logging.h>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <queue>
 #include <string>
 #include <thread>
@@ -26,6 +27,7 @@ class Costmap {
   double inscribed_radius_;
   double inflation_weight_;
   double inflation_radius_;
+  std::mutex plug_map_mutex_;
   struct Cell {
     int mx, my, src_x, src_y;
     int dis;
@@ -43,11 +45,21 @@ class Costmap {
     }
   };
   void EnQueue(int x, int y, int src_x, int src_y, std::vector<std::vector<bool>>& seen, std::priority_queue<Cell>&, std::vector<std::vector<unsigned char>>& cost_map);
+  Costmap(double robot_x, double robot_y, double robot_yaw, double size, std::string file_name);
+  ~Costmap();
+  Costmap(const Costmap&);
+  Costmap& operator=(const Costmap&);
 
   public:
-  Costmap(double robot_x, double robot_y, double robot_yaw, double size, std::string file_name);
-
-  ~Costmap();
+  static Costmap& getInstance(double size, std::string file_name)
+  {
+    static Costmap instance_ = Costmap(0.0,0.0,0.0,size, file_name);
+    return instance_;
+  }
+  static Costmap& getInstance()
+  {
+    return getInstance(0,"");
+  }
   void UpdateCostMap(double robot_x, double robot_y, double robot_yaw);
   unsigned char GetCellCost(double x, double y);
   bool AddPlug(std::vector<std::vector<bool>>& gridMap, std::string name, double robot_x, double robot_y, double robot_yaw, double size);

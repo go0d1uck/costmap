@@ -4,17 +4,18 @@
 #include <glog/logging.h>
 #include <new>
 #include <opencv2/core/persistence.hpp>
-#include <opencv4/opencv2/opencv.hpp>
+#include <opencv2/opencv.hpp>
 #include <queue>
 #include <vector>
 namespace costmap_2d {
 Costmap::Costmap(double robot_x, double robot_y, double robot_yaw, double size, std::string file_name)
 {
   LOG(INFO) << "Start initing CostMap";
-  cv::FileStorage fs;
+  LOG(INFO) << "Read config";
+  LOG(INFO) << "Config Path"
+            << " " << file_name;
+  cv::FileStorage fs(file_name, cv::FileStorage::READ);
   try {
-    LOG(INFO) << "Read config";
-    fs.open(file_name, cv::FileStorage::READ);
     fs["inflation_weight"] >> inflation_weight_;
     fs["inflation_radius"] >> inflation_radius_;
     fs["inscribed_radius"] >> inscribed_radius_;
