@@ -1,5 +1,5 @@
 %YAML 1.2
 ---
-inscribe//d_radius: 0.25
+inscribed_radius: 0.01
 inflation_weight: 5
 inflation_radius: 2

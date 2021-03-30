@@ -1,5 +1,6 @@
 #include "costmap.h"
 #include "layer.h"
+#include <cmath>
 #include <exception>
 #include <glog/logging.h>
 #include <new>
@@ -8,7 +9,8 @@
 #include <queue>
 #include <vector>
 namespace costmap_2d {
-Costmap::Costmap(double robot_x, double robot_y, double robot_yaw, double size, std::string file_name)
+Costmap::Costmap(double robot_x, double robot_y, double robot_yaw, std::string file_name)
+    : Layer("costmap")
 {
   LOG(INFO) << "Start initing CostMap";
   LOG(INFO) << "Read config";
@@ -24,15 +26,15 @@ Costmap::Costmap(double robot_x, double robot_y, double robot_yaw, double size, 
     LOG(ERROR) << "Read config error!";
     throw;
   }
-  fs.release();
   try {
-    pLayered_ = std::shared_ptr<Layer>(new Layer("layered", robot_x, robot_y, robot_yaw, size));
-  } catch (const std::bad_alloc& e) {
-    /** @brief new error,add glog here */
-    LOG(ERROR) << "malloc costmap failed!";
+    std::vector<std::vector<bool>> local_map(COSTMAP_SIZE / RESOLUTION, std::vector<bool>(COSTMAP_SIZE / RESOLUTION, false));
+    this->setGridMap(local_map);
+  } catch (std::bad_alloc) {
+    LOG(INFO) << "costmap molloc error!";
   }
+  fs.release();
   /** @brief init layered grid_map */
-  pLayered_->ResetGridMap();
+  this->ResetGridMap();
   LOG(INFO) << "initing CostMap...OK";
 }
 Costmap::~Costmap()
@@ -43,44 +45,56 @@ Costmap::~Costmap()
     LOG(INFO) << "Plugin was cleared";
   }
 }
-bool Costmap::AddPlug(std::vector<std::vector<bool>>& gridMap, std::string name, double robot_x, double robot_y, double robot_yaw, double size)
+bool Costmap::AddPlug(std::vector<std::vector<bool>>& gridMap, std::string name, double robot_x, double robot_y, double robot_yaw)
 {
   LOG(INFO) << "Adding plugin---" << name;
   if (plugins_.find(name) != plugins_.end()) {
     LOG(INFO) << "Plugin is existed--just update";
-  }
-  {
-    plugins_[name] = std::shared_ptr<Layer>(new Layer(name, robot_x, robot_y, robot_yaw, size));
+  } else {
+    LOG(INFO) << "Creat new layer---" << name;
+    plugins_[name] = std::shared_ptr<Layer>(new Layer(name));
   }
   plugins_[name]->Update(gridMap, robot_x, robot_y);
   LOG(INFO) << "Plugin---" << name << "---finished";
   return true;
 }
-std::vector<std::vector<bool>> Costmap::GetLayeredMap(double new_origin_x, double new_origin_y)
+std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x, double robot_y)
 {
   /** @brief if no map */
   LOG(INFO) << "Rending layered map...";
-  pLayered_->UpdateOrigin(new_origin_x, new_origin_y);
+  this->UpdateOrigin(robot_x, robot_y);
   if (plugins_.size() == 0) {
     LOG(INFO) << "No plugin...return self";
-    return pLayered_->getMap();
+    return this->getMap();
   }
   /** @brief update all plugin origin*/
   for (auto it = plugins_.begin(); it != plugins_.end(); it++) {
-    it->second->UpdateOrigin(new_origin_x, new_origin_y);
+    it->second->UpdateOrigin(robot_x, robot_y);
   }
   /** @brief start layered */
-  pLayered_->ResetGridMap();
-  std::vector<std::vector<bool>> local_map = pLayered_->getMap();
+  this->ResetGridMap();
+  std::vector<std::vector<bool>> local_map = this->getMap();
   for (auto it = plugins_.begin(); it != plugins_.end(); it++) {
     std::vector<std::vector<bool>> tmp_grid_map = it->second->getMap();
-    for (int i = 0; i < tmp_grid_map.size(); i++) {
-      for (int j = 0; j < tmp_grid_map[i].size(); j++) {
-        local_map[i][j] = local_map[i][j] | tmp_grid_map[i][j]; /** @brief if one is obstacle,the map obstacle */
+    int offset = (it->second->getSize().first - this->getSize().first) / 2;
+    if (offset > 0) /** @brief the sensor map is bigger than cost map */
+    {
+
+      for (int i = 0; i < local_map.size() && i < tmp_grid_map.size(); i++) {
+        for (int j = 0; j < local_map[i].size() && j < tmp_grid_map[i].size(); j++) {
+          local_map[i][j] = local_map[i][j] | tmp_grid_map[i + offset][j + offset]; /** @brief if one is obstacle,the map obstacle */
+        }
+      }
+    } else {
+      offset = abs(offset);
+      for (int i = 0; i < local_map.size() && i < tmp_grid_map.size(); i++) {
+        for (int j = 0; j < local_map[i].size() && j < tmp_grid_map[i].size(); j++) {
+          local_map[i + offset][j + offset] = local_map[i + offset][j + offset] | tmp_grid_map[i][j]; /** @brief if one is obstacle,the map obstacle */
+        }
       }
     }
   }
-  pLayered_->setGridMap(local_map);
+  this->setGridMap(local_map);
   LOG(INFO) << "Rending finished";
   return local_map;
 }
@@ -88,17 +102,16 @@ std::vector<std::vector<bool>> Costmap::GetLayeredMap(double new_origin_x, doubl
 void Costmap::Inflation(std::vector<std::vector<unsigned char>>& return_costmap)
 {
   LOG(INFO) << "Start inflation";
-  int grid_inscribed_dis = inscribed_radius_ / pLayered_->getResolution();
-  int limit = pLayered_->getMap().size();
-  grid_inscribed_dis++;
-  std::vector<std::vector<bool>> seen(limit, std::vector<bool>(limit, false));
-  return_costmap = std::vector<std::vector<unsigned char>>(limit, std::vector<unsigned char>(limit, 0));
+  int limit_x = this->getSize().first;
+  int limit_y = this->getSize().second;
+  std::vector<std::vector<bool>> seen(limit_x, std::vector<bool>(limit_y, false));
+  return_costmap = std::vector<std::vector<unsigned char>>(limit_x, std::vector<unsigned char>(limit_y, 0));
   std::priority_queue<Cell> que;
-  std::vector<std::vector<bool>> local_map = pLayered_->getMap();
+  std::vector<std::vector<bool>> local_map = this->getMap();
   LOG(INFO) << "Inflation initialized";
   /** @brief convert occupied to cosmap obstacle */
-  for (int i = 0; i < limit; i++) {
-    for (int j = 0; j < limit; j++) {
+  for (int i = 0; i < limit_x; i++) {
+    for (int j = 0; j < limit_y; j++) {
       if (local_map[i][j]) {
         return_costmap[i][j] = LETHAL_OBSTACLE;
         que.push(Cell(i, j, i, j, 0)); /** @brief push into queue */
@@ -115,27 +128,26 @@ void Costmap::Inflation(std::vector<std::vector<unsigned char>>& return_costmap)
       EnQueue(t.mx - 1, t.my, t.src_x, t.src_y, seen, que, return_costmap);
     if (t.my > 0)
       EnQueue(t.mx, t.my - 1, t.src_x, t.src_y, seen, que, return_costmap);
-    if (t.mx < limit - 1)
+    if (t.mx < limit_x - 1)
       EnQueue(t.mx + 1, t.my, t.src_x, t.src_y, seen, que, return_costmap);
-    if (t.my < limit - 1)
+    if (t.my < limit_y - 1)
       EnQueue(t.mx, t.my + 1, t.src_x, t.src_y, seen, que, return_costmap);
   }
+  LOG(INFO) << "Inflation ok";
 }
-void Costmap::UpdateCostMap(double robot_x, double robot_y, double robot_yaw)
+std::vector<std::vector<unsigned char>> Costmap::UpdateCostMap(double robot_x, double robot_y, double robot_yaw)
 {
   std::vector<std::vector<unsigned char>> local_map;
-  double new_origin_x = robot_x - pLayered_->getSize() / 2;
-  double new_origin_y = robot_y - pLayered_->getSize() / 2;
-  GetLayeredMap(new_origin_x, new_origin_y);
+  GetLayeredMap(robot_x, robot_y);
   Inflation(local_map);
   costmap_need_ = local_map;
-  return;
+  return local_map;
 }
 void Costmap::EnQueue(int x, int y, int src_x, int src_y, std::vector<std::vector<bool>>& seen, std::priority_queue<Cell>& q, std::vector<std::vector<unsigned char>>& cost_map)
 {
   Cell t(x, y, src_x, src_y, 0);
-  GetDistanceIngrid(t);
-  if (t.dis * pLayered_->getResolution() > inflation_radius_)
+  GetDistanceInGrid(t);
+  if (t.dis * this->getResolution() > inflation_radius_)
     return; /** @brief out of range */
   unsigned char cost = GetCost(t);
   if (!seen[x][y]) {
@@ -145,10 +157,10 @@ void Costmap::EnQueue(int x, int y, int src_x, int src_y, std::vector<std::vecto
 }
 unsigned char Costmap::GetCellCost(double x, double y)
 {
-  int ox = pLayered_->getXInMap();
-  int oy = pLayered_->getYInMap();
-  int new_x = x / pLayered_->getResolution();
-  int new_y = y / pLayered_->getResolution();
+  int ox = this->getXInMap();
+  int oy = this->getYInMap();
+  int new_x = x / this->getResolution();
+  int new_y = y / this->getResolution();
   int cost_x = new_x - ox;
   int cost_y = new_y - oy;
   if (cost_x < 0 || cost_y < 0 || cost_x >= costmap_need_.size() || cost_x >= costmap_need_.size())

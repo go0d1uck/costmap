@@ -17,17 +17,16 @@
 #define INSCRIBED_RADIUS_OBSTACLE 254
 namespace costmap_2d {
 
-class Costmap {
+class Costmap:private Layer {
   private:
   std::map<std::string, std::shared_ptr<Layer>> plugins_;
-  /** @brief the layer after layered */
-  std::shared_ptr<Layer> pLayered_;
   std::vector<std::vector<unsigned char>> costmap_need_;
   /** @brief useful for inflation */
   double inscribed_radius_;
   double inflation_weight_;
   double inflation_radius_;
   std::mutex plug_map_mutex_;
+  /** @brief useful for update queue */
   struct Cell {
     int mx, my, src_x, src_y;
     int dis;
@@ -45,28 +44,29 @@ class Costmap {
     }
   };
   void EnQueue(int x, int y, int src_x, int src_y, std::vector<std::vector<bool>>& seen, std::priority_queue<Cell>&, std::vector<std::vector<unsigned char>>& cost_map);
-  Costmap(double robot_x, double robot_y, double robot_yaw, double size, std::string file_name);
+  Costmap(double robot_x, double robot_y, double robot_yaw, std::string file_name);
   ~Costmap();
   Costmap(const Costmap&);
   Costmap& operator=(const Costmap&);
 
   public:
-  static Costmap& getInstance(double size, std::string file_name)
+  static Costmap& getInstance(std::string file_name)
   {
-    static Costmap instance_ = Costmap(0.0,0.0,0.0,size, file_name);
+    static Costmap instance_ = Costmap(0.0, 0.0, 0.0, file_name);
     return instance_;
   }
   static Costmap& getInstance()
   {
-    return getInstance(0,"");
+    return getInstance("");
   }
-  void UpdateCostMap(double robot_x, double robot_y, double robot_yaw);
+  std::vector<std::vector<unsigned char>> UpdateCostMap(double robot_x, double robot_y, double robot_yaw);
+  bool AddPlug(std::vector<std::vector<bool>>& gridMap, std::string name, double robot_x, double robot_y, double robot_yaw);
   unsigned char GetCellCost(double x, double y);
-  bool AddPlug(std::vector<std::vector<bool>>& gridMap, std::string name, double robot_x, double robot_y, double robot_yaw, double size);
+  protected:
   std::vector<std::vector<bool>> GetLayeredMap(double new_robot_x, double new_robot_y);
   inline unsigned char ComputeCost(double distance) const
   {
-    distance *= pLayered_->getResolution();
+    distance *= this->getResolution();
     unsigned char cost = 0;
     if (distance == 0) {
       cost = LETHAL_OBSTACLE;
@@ -81,13 +81,13 @@ class Costmap {
   inline unsigned char GetCost(Cell t)
   {
     /** @brief out of inflation radius is zero*/
-    int grid_dis = GetDistanceIngrid(t);
-    if (grid_dis * pLayered_->getResolution() > inflation_radius_)
+    int grid_dis = GetDistanceInGrid(t);
+    if (grid_dis * this->getResolution() > inflation_radius_)
       return 0;
     else
       return ComputeCost(grid_dis);
   }
-  inline unsigned int GetDistanceIngrid(Cell& t)
+  inline unsigned int GetDistanceInGrid(Cell& t)
   {
     unsigned int dx = std::abs(t.mx - t.src_x);
     unsigned int dy = std::abs(t.my - t.src_y);
