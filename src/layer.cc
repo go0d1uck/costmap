@@ -1,8 +1,10 @@
 #include "layer.h"
+#include <cmath>
 #include <glog/logging.h>
 #include <ostream>
 #include <utility>
 #include <vector>
+#include <queue>
 namespace costmap_2d {
 void Layer::Update(std::vector<std::vector<bool>>& grid_map, double robot_x, double robot_y)
 {

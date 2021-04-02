@@ -1,5 +1,6 @@
 #include "costmap.h"
 #include "layer.h"
+#include <algorithm>
 #include <cmath>
 #include <exception>
 #include <glog/logging.h>
@@ -7,8 +8,52 @@
 #include <opencv2/core/persistence.hpp>
 #include <opencv2/opencv.hpp>
 #include <queue>
+#include <string>
+#include <utility>
 #include <vector>
 namespace costmap_2d {
+#ifdef TEST
+bool Costmap::TestMap(const std::vector<std::vector<bool>>& m)
+{
+  int center_i = m.size() / 2;
+  int center_j = m[0].size() / 2;
+  std::map<std::pair<int, int>, bool> seen;
+  std::queue<std::pair<int, int>> q;
+  if (m[center_i][center_j] == 1)
+    return false;
+  q.push(std::make_pair(center_i, center_j));
+  while (!q.empty()) {
+    std::pair<int, int> t = q.front();
+    q.pop();
+    if (m[t.first][t.second]==1) {
+      LOG(INFO) << "collision position" << t.first << "," << t.second << "--dis:" << std::hypot(center_i - t.first, center_j - t.second);
+      return false;
+    } else {
+      double dis = std::hypot(center_i - t.first - 1, center_j - t.second);
+      if (!seen[std::make_pair(t.first + 1, t.second)] && dis <= inscribed_radius_ * 20) {
+        q.push(std::make_pair(t.first + 1, t.second));
+        seen[std::make_pair(t.first + 1, t.second)] = true;
+      }
+      dis = std::hypot(center_i - t.first +1, center_j - t.second);
+      if (!seen[std::make_pair(t.first - 1, t.second)] && dis <= inscribed_radius_ * 20) {
+        q.push(std::make_pair(t.first - 1, t.second));
+        seen[std::make_pair(t.first - 1, t.second)] = true;
+      }
+      dis = std::hypot(center_i - t.first, center_j - t.second - 1);
+      if (!seen[std::make_pair(t.first, t.second + 1)] && dis <= inscribed_radius_ * 20) {
+        q.push(std::make_pair(t.first, t.second + 1));
+        seen[std::make_pair(t.first, t.second + 1)] = true;
+      }
+      dis = std::hypot(center_i - t.first, center_j - t.second + 1);
+      if (!seen[std::make_pair(t.first, t.second - 1)] && dis <= inscribed_radius_ * 20) {
+        q.push(std::make_pair(t.first, t.second - 1));
+        seen[std::make_pair(t.first + 1, t.second)] = true;
+      }
+    }
+  }
+  return true;
+}
+#endif
 Costmap::Costmap(double robot_x, double robot_y, double robot_yaw, std::string file_name)
     : Layer("costmap")
 {
@@ -76,6 +121,20 @@ std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x, double rob
   std::vector<std::vector<bool>> local_map = this->getMap();
   for (auto it = plugins_.begin(); it != plugins_.end(); it++) {
     std::vector<std::vector<bool>> tmp_grid_map = it->second->getMap();
+#ifdef TEST
+    LOG(INFO) << "test map";
+    if (tmp_grid_map.size() > 0) {
+      if (!TestMap(tmp_grid_map)) {
+        LOG(ERROR) << "ERROR MAP---" << it->first;
+        for (int i = 0; i < tmp_grid_map.size(); i++) {
+          std::string one_line = "";
+          for (int j = 0; j < tmp_grid_map[i].size(); j++)
+            one_line += std::to_string(tmp_grid_map[i][j]);
+          LOG(INFO) << one_line;
+        }
+      }
+    }
+#endif
     int offset = (it->second->getSize().first - this->getSize().first) / 2;
     if (offset > 0) /** @brief the sensor map is bigger than cost map */
     {
@@ -141,6 +200,10 @@ std::vector<std::vector<unsigned char>> Costmap::UpdateCostMap(double robot_x, d
   GetLayeredMap(robot_x, robot_y);
   Inflation(local_map);
   costmap_need_ = local_map;
+#ifdef TEST
+  if (local_map[local_map.size() / 2][local_map[0].size() / 2] >= INSCRIBED_RADIUS_OBSTACLE)
+    LOG(INFO) << "ERROR cosmap";
+#endif
   return local_map;
 }
 void Costmap::EnQueue(int x, int y, int src_x, int src_y, std::vector<std::vector<bool>>& seen, std::priority_queue<Cell>& q, std::vector<std::vector<unsigned char>>& cost_map)

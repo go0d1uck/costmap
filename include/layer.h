@@ -7,6 +7,7 @@
 #include <vector>
 #define RESOLUTION 0.05
 #define COSTMAP_SIZE 3
+#define TEST 1
 namespace costmap_2d {
 
 class Layer {

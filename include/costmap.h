@@ -17,7 +17,7 @@
 #define INSCRIBED_RADIUS_OBSTACLE 254
 namespace costmap_2d {
 
-class Costmap:private Layer {
+class Costmap : private Layer {
   private:
   std::map<std::string, std::shared_ptr<Layer>> plugins_;
   std::vector<std::vector<unsigned char>> costmap_need_;
@@ -48,8 +48,11 @@ class Costmap:private Layer {
   ~Costmap();
   Costmap(const Costmap&);
   Costmap& operator=(const Costmap&);
-
+#ifdef TEST
+  bool TestMap(const std::vector<std::vector<bool>>& m);
+#endif
   public:
+  std::vector<std::vector<bool>> GetLayeredMap(double new_robot_x, double new_robot_y);
   static Costmap& getInstance(std::string file_name)
   {
     static Costmap instance_ = Costmap(0.0, 0.0, 0.0, file_name);
@@ -62,18 +65,17 @@ class Costmap:private Layer {
   std::vector<std::vector<unsigned char>> UpdateCostMap(double robot_x, double robot_y, double robot_yaw);
   bool AddPlug(std::vector<std::vector<bool>>& gridMap, std::string name, double robot_x, double robot_y, double robot_yaw);
   unsigned char GetCellCost(double x, double y);
+
   protected:
-  std::vector<std::vector<bool>> GetLayeredMap(double new_robot_x, double new_robot_y);
   inline unsigned char ComputeCost(double distance) const
   {
-    distance *= this->getResolution();
     unsigned char cost = 0;
     if (distance == 0) {
       cost = LETHAL_OBSTACLE;
-    } else if (distance <= inscribed_radius_) {
+    } else if (distance < inscribed_radius_) {
       cost = INSCRIBED_RADIUS_OBSTACLE;
     } else {
-      double factor = std::exp(-1.0 * inflation_radius_ * (distance - inscribed_radius_));
+      double factor = std::exp(-1.0 * inflation_weight_ * (distance - inscribed_radius_));
       cost = (unsigned char)((INSCRIBED_RADIUS_OBSTACLE - 1) * factor);
     }
     return cost;
@@ -81,11 +83,11 @@ class Costmap:private Layer {
   inline unsigned char GetCost(Cell t)
   {
     /** @brief out of inflation radius is zero*/
-    int grid_dis = GetDistanceInGrid(t);
-    if (grid_dis * this->getResolution() > inflation_radius_)
+    double dis_mile = GetDistanceInGrid(t)*this->getResolution();
+    if (dis_mile > inflation_radius_)
       return 0;
     else
-      return ComputeCost(grid_dis);
+      return ComputeCost(dis_mile);
   }
   inline unsigned int GetDistanceInGrid(Cell& t)
   {
