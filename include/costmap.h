@@ -83,7 +83,7 @@ class Costmap : private Layer {
   inline unsigned char GetCost(Cell t)
   {
     /** @brief out of inflation radius is zero*/
-    double dis_mile = GetDistanceInGrid(t)*this->getResolution();
+    double dis_mile = GetDistanceInGrid(t) * this->getResolution();
     if (dis_mile > inflation_radius_)
       return 0;
     else

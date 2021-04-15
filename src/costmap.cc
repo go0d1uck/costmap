@@ -25,7 +25,7 @@ bool Costmap::TestMap(const std::vector<std::vector<bool>>& m)
   while (!q.empty()) {
     std::pair<int, int> t = q.front();
     q.pop();
-    if (m[t.first][t.second]==1) {
+    if (m[t.first][t.second] == 1) {
       LOG(INFO) << "collision position" << t.first << "," << t.second << "--dis:" << std::hypot(center_i - t.first, center_j - t.second);
       return false;
     } else {
@@ -34,7 +34,7 @@ bool Costmap::TestMap(const std::vector<std::vector<bool>>& m)
         q.push(std::make_pair(t.first + 1, t.second));
         seen[std::make_pair(t.first + 1, t.second)] = true;
       }
-      dis = std::hypot(center_i - t.first +1, center_j - t.second);
+      dis = std::hypot(center_i - t.first + 1, center_j - t.second);
       if (!seen[std::make_pair(t.first - 1, t.second)] && dis <= inscribed_radius_ * 20) {
         q.push(std::make_pair(t.first - 1, t.second));
         seen[std::make_pair(t.first - 1, t.second)] = true;
@@ -163,6 +163,10 @@ void Costmap::Inflation(std::vector<std::vector<unsigned char>>& return_costmap)
   LOG(INFO) << "Start inflation";
   int limit_x = this->getSize().first;
   int limit_y = this->getSize().second;
+  if (limit_x < 0 || limit_y < 0 || limit_x > 1000 || limit_y > 1000) {
+    LOG(INFO) << limit_x << " " << limit_y << " ERROR";
+    return;
+  }
   std::vector<std::vector<bool>> seen(limit_x, std::vector<bool>(limit_y, false));
   return_costmap = std::vector<std::vector<unsigned char>>(limit_x, std::vector<unsigned char>(limit_y, 0));
   std::priority_queue<Cell> que;
@@ -179,7 +183,7 @@ void Costmap::Inflation(std::vector<std::vector<unsigned char>>& return_costmap)
     }
   }
   while (!que.empty()) {
-    const Cell& t = que.top();
+    const Cell t = que.top();
     if (t.dis != 0)
       return_costmap[t.mx][t.my] = GetCost(t);
     que.pop();
@@ -226,7 +230,7 @@ unsigned char Costmap::GetCellCost(double x, double y)
   int new_y = y / this->getResolution();
   int cost_x = new_x - ox;
   int cost_y = new_y - oy;
-  if (cost_x < 0 || cost_y < 0 || cost_x >= costmap_need_.size() || cost_x >= costmap_need_.size())
+  if (cost_x < 0 || cost_y < 0 || cost_x >= costmap_need_.size() || cost_y >= costmap_need_.size())
     return LETHAL_OBSTACLE;
   else
     return costmap_need_[cost_x][cost_y];
