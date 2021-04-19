@@ -5,7 +5,8 @@
 
 # shell command, use quotation for filenames containing spaces
 # check ":AsyncTaskMacro" to see available macros
-command=./love.sh
+command=./test 1>costmap_data.txt 2>log && python ~/py_project/visual_map/heatpot/get_heatmap.py
+  
 
 # working directory, can change to $(VIM_ROOT) for project root
 cwd=$(VIM_ROOT)/build
@@ -13,7 +14,7 @@ cwd=$(VIM_ROOT)/build
 # output mode, can be one of quickfix and terminal
 # - quickfix: output to quickfix window
 # - terminal: run the command in the internal terminal
-output=quickfix
+output=terminal
 
 # this is for output=quickfix only
 # if it is omitted, vim's current errorformat will be used.
@@ -22,4 +23,41 @@ errorformat=%f:%l:%m
 # save file before execute
 save=2
 
+[release]
+command=./love.sh release
 
+# working directory, can change to $(VIM_ROOT) for project root
+cwd=$(VIM_ROOT)/build
+
+# output mode, can be one of quickfix and terminal
+# - quickfix: output to quickfix window
+# - terminal: run the command in the internal terminal
+output=terminal
+
+# this is for output=quickfix only
+# if it is omitted, vim's current errorformat will be used.
+errorformat=%f:%l:%m
+
+# save file before execute
+save=2
+
+[build]
+
+# shell command, use quotation for filenames containing spaces
+# check ":AsyncTaskMacro" to see available macros
+command=./love.sh && python ~/py_project/visual_map/heatpot/get_heatmap.py
+
+# working directory, can change to $(VIM_ROOT) for project root
+cwd=$(VIM_ROOT)/build
+
+# output mode, can be one of quickfix and terminal
+# - quickfix: output to quickfix window
+# - terminal: run the command in the internal terminal
+output=terminal
+
+# this is for output=quickfix only
+# if it is omitted, vim's current errorformat will be used.
+errorformat=%f:%l:%m
+
+# save file before execute
+save=2

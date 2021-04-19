@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 
-project(costmap VERSION 2.0)
+project(costmap VERSION 3.0)
 
 if(ANDROID)
 set(OpenCV_DIR /home/antraume/costmap/opencv-3.4.3/build/love/sdk/native/jni/abi-arm64-v8a/)

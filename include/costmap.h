@@ -25,6 +25,7 @@ class Costmap : private Layer {
   double inscribed_radius_;
   double inflation_weight_;
   double inflation_radius_;
+  double map_size_;
   std::mutex plug_map_mutex_;
   /** @brief useful for update queue */
   struct Cell {
@@ -64,7 +65,8 @@ class Costmap : private Layer {
   }
   std::vector<std::vector<unsigned char>> UpdateCostMap(double robot_x, double robot_y, double robot_yaw);
   bool AddPlug(std::vector<std::vector<bool>>& gridMap, std::string name, double robot_x, double robot_y, double robot_yaw);
-  unsigned char GetCellCost(double x, double y);
+  //unsigned char GetCellCost(double x, double y);
+  unsigned char GetCellCost(double x, double y, int& cx, int& cy);
 
   protected:
   inline unsigned char ComputeCost(double distance) const
@@ -87,7 +89,11 @@ class Costmap : private Layer {
     if (dis_mile > inflation_radius_)
       return 0;
     else
-      return ComputeCost(dis_mile);
+    {
+      double t = ComputeCost(dis_mile);
+      if (t < 10) return 0;
+      else return t;
+    }
   }
   inline unsigned int GetDistanceInGrid(Cell& t)
   {

@@ -11,6 +11,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#define VERSION 3.0
 namespace costmap_2d {
 #ifdef TEST
 bool Costmap::TestMap(const std::vector<std::vector<bool>>& m)
@@ -57,7 +58,7 @@ bool Costmap::TestMap(const std::vector<std::vector<bool>>& m)
 Costmap::Costmap(double robot_x, double robot_y, double robot_yaw, std::string file_name)
     : Layer("costmap")
 {
-  LOG(INFO) << "Start initing CostMap";
+  LOG(INFO) << "Start initing CostMap" << "---Version:" << VERSION;
   LOG(INFO) << "Read config";
   LOG(INFO) << "Config Path"
             << " " << file_name;
@@ -66,13 +67,14 @@ Costmap::Costmap(double robot_x, double robot_y, double robot_yaw, std::string f
     fs["inflation_weight"] >> inflation_weight_;
     fs["inflation_radius"] >> inflation_radius_;
     fs["inscribed_radius"] >> inscribed_radius_;
+    fs["map_size"] >> map_size_;
     LOG(INFO) << "Set config ok";
   } catch (std::exception) {
     LOG(ERROR) << "Read config error!";
     throw;
   }
   try {
-    std::vector<std::vector<bool>> local_map(COSTMAP_SIZE / RESOLUTION, std::vector<bool>(COSTMAP_SIZE / RESOLUTION, false));
+    std::vector<std::vector<bool>> local_map(map_size_ / RESOLUTION, std::vector<bool>(map_size_ / RESOLUTION, false));
     this->setGridMap(local_map);
   } catch (std::bad_alloc) {
     LOG(INFO) << "costmap molloc error!";
@@ -222,17 +224,24 @@ void Costmap::EnQueue(int x, int y, int src_x, int src_y, std::vector<std::vecto
     seen[x][y] = true;
   }
 }
-unsigned char Costmap::GetCellCost(double x, double y)
+unsigned char Costmap::GetCellCost(double x, double y, int& cx, int& cy)
 {
+  cx = -1, cy = -1;
   int ox = this->getXInMap();
   int oy = this->getYInMap();
   int new_x = x / this->getResolution();
   int new_y = y / this->getResolution();
   int cost_x = new_x - ox;
   int cost_y = new_y - oy;
-  if (cost_x < 0 || cost_y < 0 || cost_x >= costmap_need_.size() || cost_y >= costmap_need_.size())
+  if (cost_x < 0 || cost_y < 0 || cost_x >= costmap_need_.size() || (costmap_need_.size() > 0 && cost_y >= costmap_need_[0].size()))
+  {
+    LOG(ERROR) << "OUT COSTMAP RANGE:" << cost_x << " " << cost_y;
     return LETHAL_OBSTACLE;
-  else
+  }
+  else {
+    cx = cost_x,cy = cost_y;
+    LOG(INFO) << "IN COSTMAP RANGE" << cost_x << " " << cost_y;
     return costmap_need_[cost_x][cost_y];
+  }
 }
 } // end namespace costmap_2d

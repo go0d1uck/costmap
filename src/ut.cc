@@ -3,6 +3,7 @@
 #include "opencv2/opencv.hpp"
 #include <cmath>
 #include <glog/logging.h>
+#include <sstream>
 #include <utility>
 #include <vector>
 Ut::Ut(std::string config_file_path)
@@ -43,9 +44,7 @@ void Ut::GetDeltas(double angle, double* dx, double* dy)
 double Ut::SensorModel(double r, double phi, double theta)
 {
   double lbda = Delta(phi) * Gamma(theta);
-
   double delta = 0.02;
-
   if (phi >= 0.0 && phi < r - 2 * delta * r)
     return (1 - lbda) * (0.5);
   else if (phi < r - delta * r)
@@ -60,12 +59,14 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
 {
   for (int i = 0; i < data.size(); i++) {
     LOG(INFO) << "Update" << i << ":angle " << data[i].theta;
-    double max_angle_ = data[i].fov / 2;
+    max_angle_ = data[i].fov / 2;
+    phi_v_ = data[i].max_dis;
     // calculate the bound
-    double min_x, min_y, max_x, max_y;
+    double min_x, min_y, max_x, max_y, tx, ty;
+    std::pair<double, double> world, obstacle_in_robot;
     min_x = min_y = max_x = max_y = 0;
-    double tx = cos(data[i].toward_angle - max_angle_) * data[i].detect_dis * 1.2;
-    double ty = sin(data[i].toward_angle - max_angle_) * data[i].detect_dis * 1.2;
+    tx = cos(data[i].toward_angle - max_angle_) * data[i].detect_dis * 1.2;
+    ty = sin(data[i].toward_angle - max_angle_) * data[i].detect_dis * 1.2;
     min_x = std::min(tx, min_x);
     min_y = std::min(ty, min_y);
     max_x = std::max(tx, max_x);
@@ -77,12 +78,13 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
     max_x = std::max(tx, max_x);
     max_y = std::max(ty, max_y);
     int grid_min_x, grid_min_y, grid_max_x, grid_max_y;
-    grid_min_x = int(grid_min_x / getResolution());
-    grid_min_y = int(grid_min_y / getResolution());
-    grid_max_x = int(grid_max_x / getResolution());
-    grid_max_y = int(grid_max_y / getResolution());
+    grid_min_x = int(min_x / getResolution());
+    grid_min_y = int(min_y / getResolution());
+    grid_max_x = int(max_x / getResolution());
+    grid_max_y = int(max_y / getResolution());
     for (int x = grid_min_x; x <= grid_max_x; x++) {
       for (int y = grid_min_y; y <= grid_max_y; y++) {
+        LOG(INFO) << x << " " << y;
         double phi = sqrt(x * x + y * y); // grid
         double deviation_angle = atan2(x, y);
         double theta = deviation_angle - data[i].toward_angle;
@@ -90,15 +92,21 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
         double sensor_y_in_robot = data[i].r * sin(data[i].theta);
         double obstacle_x_in_sensor = phi * getResolution() * cos(deviation_angle);
         double obstacle_y_in_sensor = phi * getResolution() * sin(deviation_angle);
-        double obstacle_x_in_robot = trans_coordinate(obstacle_x_in_sensor, obstacle_y_in_sensor, deviation_angle, sensor_x_in_robot, sensor_y_in_robot).first;
-        double obstacle_y_in_robot = trans_coordinate(obstacle_x_in_sensor, obstacle_y_in_sensor, deviation_angle, sensor_x_in_robot, sensor_y_in_robot).second;
-        double world_x = trans_coordinate(obstacle_x_in_robot, obstacle_y_in_robot, robot_yaw, robot_x, robot_y).first;
-        double world_y = trans_coordinate(obstacle_x_in_robot, obstacle_y_in_robot, robot_yaw, robot_x, robot_y).second;
+        obstacle_in_robot = trans_coordinate(obstacle_x_in_sensor, obstacle_y_in_sensor, data[i].theta, sensor_x_in_robot, sensor_y_in_robot);
+        LOG(INFO) << obstacle_in_robot.first << " " << obstacle_in_robot.second;
+        world = trans_coordinate(obstacle_in_robot.first, obstacle_in_robot.second, robot_yaw, robot_x, robot_y);
+        LOG(INFO) << world.first << " " << world.second << "world";
+        auto grid_world = ToGridMapPos(world.first, world.second);
+        std::swap(grid_world.first, grid_world.second);
+        LOG(INFO) << grid_world.first << " " << grid_world.second << "world_grid";
         double sensor = SensorModel(data[i].detect_dis, phi * getResolution(), theta);
-        double prior = getPreProb(world_x, world_y);
+        double prior = getPreProb(grid_world.first, grid_world.second);
         double prob_occ = sensor * prior;
         double prob_not = (1 - sensor) * (1 - prior);
-        probability_map_[std::make_pair(world_x, world_y)] = prob_occ / (prob_occ + prob_not);
+        LOG(INFO) << "sensor" << sensor;
+        probability_map_[std::make_pair(grid_world.first, grid_world.second)] = prob_occ / (prob_occ + prob_not);
+        LOG(INFO) << grid_world.first << grid_world.second;
+        LOG(INFO) << probability_map_[std::make_pair(grid_world.first, grid_world.second)];
       }
     }
   }

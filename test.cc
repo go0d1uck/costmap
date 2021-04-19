@@ -41,10 +41,10 @@ int main()
     input[3].detect_dis = d / 100;
     ut_layer.FeedData(input, x, y, yaw);
     local_map = ut_layer.getGridMap(x, y);
-    LOG(INFO) << local_map[0].size();
+    cout << x << " " << y << endl;
+    printMap(local_map);
     //costmap_2d::Costmap::getInstance().AddPlug(local_map, "UT", x, y, yaw);
     //printMap(costmap_2d::Costmap::getInstance().UpdateCostMap(x, y, yaw));
-    printMap(local_map);
   }
   return 0;
 }

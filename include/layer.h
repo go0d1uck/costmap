@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 #define RESOLUTION 0.05
-#define COSTMAP_SIZE 3
 #define TEST
 namespace costmap_2d {
 
