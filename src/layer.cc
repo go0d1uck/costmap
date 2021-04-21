@@ -9,8 +9,8 @@ namespace costmap_2d {
 void Layer::Update(std::vector<std::vector<bool>>& grid_map, double robot_x, double robot_y)
 {
   grid_map_ = grid_map;
-  origin_x_ = robot_x - (this->getSize().first * this->getResolution()) / 2;
-  origin_y_ = robot_y - (this->getSize().second * this->getResolution()) / 2;
+  origin_x_ = robot_x + (this->getSize().first * this->getResolution()) / 2;
+  origin_y_ = robot_y + (this->getSize().second * this->getResolution()) / 2;
 }
 void Layer::ResetGridMap()
 {
@@ -21,8 +21,8 @@ void Layer::ResetGridMap()
 void Layer::UpdateOrigin(double robot_x, double robot_y)
 {
   LOG(INFO) << name_ << " is updating origin...";
-  double new_x = robot_x - (this->getSize().first * this->getResolution()) / 2;
-  double new_y = robot_y - (this->getSize().second * this->getResolution()) / 2;
+  double new_x = robot_x + (this->getSize().first * this->getResolution()) / 2;
+  double new_y = robot_y + (this->getSize().second * this->getResolution()) / 2;
   /** @brief calculate  offset*/
   int offset_x = (origin_x_ - new_x) / resolution_;
   int offset_y = (origin_y_ - new_y) / resolution_;

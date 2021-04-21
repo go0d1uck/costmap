@@ -231,16 +231,14 @@ unsigned char Costmap::GetCellCost(double x, double y, int& cx, int& cy)
   int oy = this->getYInMap();
   int new_x = x / this->getResolution();
   int new_y = y / this->getResolution();
-  int cost_x = new_x - ox;
-  int cost_y = new_y - oy;
+  int cost_x = ox - new_x;
+  int cost_y = oy - new_y;
   if (cost_x < 0 || cost_y < 0 || cost_x >= costmap_need_.size() || (costmap_need_.size() > 0 && cost_y >= costmap_need_[0].size()))
   {
-    LOG(ERROR) << "OUT COSTMAP RANGE:" << cost_x << " " << cost_y;
     return LETHAL_OBSTACLE;
   }
   else {
     cx = cost_x,cy = cost_y;
-    LOG(INFO) << "IN COSTMAP RANGE" << cost_x << " " << cost_y;
     return costmap_need_[cost_x][cost_y];
   }
 }

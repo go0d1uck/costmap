@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 #define RESOLUTION 0.05
-#define TEST
+//#yawdefine TEST
 namespace costmap_2d {
 
 class Layer {
