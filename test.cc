@@ -9,7 +9,7 @@ void printMap(std::vector<std::vector<DATA>> t)
 {
   for (int i = 0; i < t.size(); i++) {
     for (int j = 0; j < t[i].size(); j++)
-      std::cout << int(t[i][j]) << " ";
+      std::cout << double(t[i][j]) << " ";
     std::cout << std::endl;
   }
   //cout << "center" << int(t[80][80])<< endl;
@@ -34,7 +34,9 @@ int main()
   costmap_2d::Costmap::getInstance("/home/antraume/costmap/costmap_config.yaml");
   Ut ut_layer("/home/antraume/costmap/ut_config.yaml");
   double a, b, c, d;
+  int i = 0;
   while (cin >> a >> b >> c >> d >> x >> y >> yaw) {
+    LOG(INFO) << "index:" << i;
     input[0].detect_dis = a / 100;
     input[1].detect_dis = b / 100;
     input[2].detect_dis = c / 100;
@@ -42,9 +44,10 @@ int main()
     ut_layer.FeedData(input, x, y, yaw);
     local_map = ut_layer.getGridMap(x, y);
     cout << x << " " << y << endl;
-    printMap(local_map);
-    costmap_2d::Costmap::getInstance().AddPlug(local_map, "UT", x, y, yaw);
-    printMap(costmap_2d::Costmap::getInstance().UpdateCostMap(x, y, yaw));
+    //printMap(local_map);
+    i++;
+    //costmap_2d::Costmap::getInstance().AddPlug(local_map, "UT", x, y, yaw);
+    //printMap(costmap_2d::Costmap::getInstance().UpdateCostMap(x, y, yaw));
   }
   //costmap_2d::Costmap::getInstance("/home/antraume/costmap/costmap_config.yaml");
   //freopen("/home/antraume/costmap/test/grid_data.txt", "r", stdin);
