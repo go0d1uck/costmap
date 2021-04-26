@@ -166,19 +166,14 @@ std::vector<std::vector<bool>> Ut::getGridMap(double x, double y)
   ToGridMapPos(x + map_size_ / 2, y + map_size_ / 2, origin.first, origin.second);
   ToGridMapPos(min_x, min_y, min_pos.first, min_pos.second), ToGridMapPos(max_x, max_y, max_pos.first, max_pos.second);
   std::vector<std::vector<bool>> local_map(max_pos.second - min_pos.second, std::vector<bool>(max_pos.first - min_pos.second, false));
-  bool flag = false;
   for (int i = 0; i < max_pos.second - min_pos.second; i++) {
     for (int j = 0; j < max_pos.first - min_pos.first; j++) {
       int globl_x = origin.first - i, globl_y = origin.second - j;
       //if (last_change_[std::make_pair(globl_x, globl_y)])
       local_map[i][j] = (getPreProb(globl_x, globl_y) > 0.5) ? 1 : 0;
-      flag = flag || local_map[i][j];
       //else
       //local_map[i][j] = 0;
     }
-  }
-  if (!flag) {
-    LOG(ERROR) << "EMPTY MAP: " << x << " " << y;
   }
   LOG(INFO) << "Get ut map";
   return local_map;
