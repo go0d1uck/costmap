@@ -45,8 +45,8 @@ int main()
     local_map = ut_layer.getGridMap(x, y);
     printMap(local_map);
     i++;
-    //costmap_2d::Costmap::getInstance().AddPlug(local_map, "UT", x, y, yaw);
-    //printMap(costmap_2d::Costmap::getInstance().UpdateCostMap(x, y, yaw));
+    costmap_2d::Costmap::getInstance().AddPlug(local_map, "UT", x, y, yaw);
+    printMap(costmap_2d::Costmap::getInstance().UpdateCostMap(x, y, yaw));
   }
   //costmap_2d::Costmap::getInstance("/home/antraume/costmap/costmap_config.yaml");
   //freopen("/home/antraume/costmap/test/grid_data.txt", "r", stdin);

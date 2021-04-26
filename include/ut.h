@@ -26,6 +26,7 @@ class Ut : protected costmap_2d::Layer {
   int delay_times_ = 20;
   double un_refresh_size_;
   bool use_view_;
+  double clear_dis_;
   std::map<std::pair<int, int>, double> probability_map_;
   /** @brief get pos of sensor */
   double NormalizeAngle(double angle)
@@ -48,7 +49,7 @@ class Ut : protected costmap_2d::Layer {
     global_x = TransCoordinate(x, y, robot_yaw, robot_x, robot_y).first;
     global_y = TransCoordinate(x, y, robot_yaw, robot_x, robot_y).second;
   }
-  void update_cell(double ox, double oy, double ot, double r, double nx, double ny, bool clear);
+  void update_cell(double ox, double oy, double ot, double r, double nx, double ny, bool clear, int tx, int ty);
   double Gamma(double theta);
   double Delta(double phi);
   double SensorModel(double r, double phi, double theta);
