@@ -27,6 +27,7 @@ class Costmap : private Layer {
   double inflation_radius_;
   double map_size_;
   std::mutex plug_map_mutex_;
+  std::mutex layered_mutex_;
   /** @brief useful for update queue */
   struct Cell {
     int mx, my, src_x, src_y;

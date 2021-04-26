@@ -14,6 +14,8 @@ Ut::Ut(std::string config_file_path)
   LOG(INFO) << "Start read config";
   cv::FileStorage fs(config_file_path, cv::FileStorage::READ);
   fs["map_size_metre"] >> map_size_;
+  fs["delay_times"] >> delay_times_;
+  fs["use_view"] >> use_view_;
   fs.release();
   LOG(INFO) << "Set UT config ok";
 }
@@ -35,7 +37,7 @@ double Ut::SensorModel(double r, double phi, double theta)
   double lbda = Delta(phi) * Gamma(theta);
   double delta = this->getResolution();
   if (phi >= 0.0 && phi < r - 2 * delta * r)
-    return (1 - lbda) * (0.5);
+    return (1 - lbda) * (0.5) / 100;
   else if (phi < r - delta * r)
     return lbda * 0.5 * pow((phi - (r - 2 * delta * r)) / (delta * r), 2) + (1 - lbda) * .5;
   else if (phi < r + delta * r) {
@@ -56,20 +58,27 @@ void Ut::update_cell(double ox, double oy, double ot, double r, double nx, doubl
   double sensor = 0.0;
   if (!clear)
     sensor = SensorModel(r, phi, theta);
-  double prior = probability_map_[std::make_pair(x, y)];
+  double prior = getPreProb(x, y);
   double prob_occ = sensor * prior;
   double prob_not = (1 - sensor) * (1 - prior);
   double new_prob = prob_occ / (prob_occ + prob_not);
-  probability_map_[std::make_pair(x, y)] = new_prob;
+  //probability_map_[std::make_pair(x, y)] = new_prob;
+  if (use_view_)
+    probability_map_[std::make_pair(x, y)] = 1;
 }
 
 void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, double robot_yaw)
 {
   LOG(INFO) << "START UT COMPUTE";
+  if(read_times_ != 0 && read_times_ % delay_times_ == 0)
+  {
+    probability_map_.clear();
+    read_times_ = 0;
+  }
   for (int i = 0; i < data.size(); i++) {
     max_angle_ = data[i].fov / 2;
     last_change_.clear();
-    inflate_cone_ = 0.5;
+    inflate_cone_ = 0.7;
     int have_angle = 0;
     if (data[i].detect_dis < 0.01 || data[i].detect_dis > data[i].max_dis) /** @brief ignore distance of max */
       continue;
@@ -136,12 +145,10 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
         }
         if (update_xy_cell) {
           double wx, wy;
-          bool flag = false;
+          bool clear = false;
           last_change_[std::make_pair(x, y)] = true;
           wx = 1.0 * x * getResolution(), wy = 1.0 * y * getResolution();
-          //if (d < data[i].detect_dis+2*getResolution())
-          //flag = true;
-          update_cell(ox, oy, theta, data[i].detect_dis, wx, wy, flag);
+          update_cell(ox, oy, theta, data[i].detect_dis, wx, wy, clear);
           have_angle++;
         }
       }
@@ -149,6 +156,7 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
     LOG(INFO) << "have_angel" << have_angle;
   }
   LOG(INFO) << "FINISH UT COMPUTE";
+  read_times_++;
 }
 std::vector<std::vector<bool>> Ut::getGridMap(double x, double y)
 {

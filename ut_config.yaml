@@ -1,3 +1,5 @@
 %YAML 1.2
 ---
 map_size_metre: 5
+delay_times: 40
+use_view: false

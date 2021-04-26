@@ -22,6 +22,9 @@ class Ut : protected costmap_2d::Layer {
   bool delay_;
   double map_size_;
   double inflate_cone_;
+  int read_times_ = 0;
+  int delay_times_ = 20;
+  bool use_view_;
   std::map<std::pair<int, int>, double> probability_map_;
   std::map<std::pair<int, int>, bool> last_change_;
   /** @brief get pos of sensor */
@@ -40,8 +43,8 @@ class Ut : protected costmap_2d::Layer {
   }
   void LocalToGlobl(const UtSensor& sensor, double local_x, double local_y, double& global_x, double& global_y, double robot_x, double robot_y, double robot_yaw)
   {
-    double x = TransCoordinate(local_x, local_y, 0, sensor.detect_dis * cos(sensor.toward_angle), sensor.detect_dis * sin(sensor.toward_angle)).first;
-    double y = TransCoordinate(local_x, local_y, 0, sensor.detect_dis * cos(sensor.toward_angle), sensor.detect_dis * sin(sensor.toward_angle)).second;
+    double x = TransCoordinate(local_x, local_y, 0, sensor.r * cos(sensor.toward_angle), sensor.r * sin(sensor.toward_angle)).first;
+    double y = TransCoordinate(local_x, local_y, 0, sensor.r * cos(sensor.toward_angle), sensor.r * sin(sensor.toward_angle)).second;
     global_x = TransCoordinate(x, y, robot_yaw, robot_x, robot_y).first;
     global_y = TransCoordinate(x, y, robot_yaw, robot_x, robot_y).second;
   }

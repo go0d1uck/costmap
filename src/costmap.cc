@@ -99,9 +99,13 @@ bool Costmap::AddPlug(std::vector<std::vector<bool>>& gridMap, std::string name,
     LOG(INFO) << "Plugin is existed--just update";
   } else {
     LOG(INFO) << "Creat new layer---" << name;
+    plug_map_mutex_.lock();
     plugins_[name] = std::shared_ptr<Layer>(new Layer(name));
+    plug_map_mutex_.unlock();
   }
+  layered_mutex_.lock();
   plugins_[name]->Update(gridMap, robot_x, robot_y);
+  layered_mutex_.unlock();
   LOG(INFO) << "Plugin---" << name << "---finished";
   return true;
 }
@@ -203,13 +207,19 @@ void Costmap::Inflation(std::vector<std::vector<unsigned char>>& return_costmap)
 std::vector<std::vector<unsigned char>> Costmap::UpdateCostMap(double robot_x, double robot_y, double robot_yaw)
 {
   std::vector<std::vector<unsigned char>> local_map;
+  layered_mutex_.lock();
   GetLayeredMap(robot_x, robot_y);
+  layered_mutex_.unlock();
   Inflation(local_map);
   costmap_need_ = local_map;
 #ifdef TEST
   if (local_map[local_map.size() / 2][local_map[0].size() / 2] >= INSCRIBED_RADIUS_OBSTACLE)
     LOG(INFO) << "ERROR cosmap";
 #endif
+  bool empty = false;
+  for(auto i:local_map)
+    for(auto j:i) empty = empty || (j==LETHAL_OBSTACLE);
+  if(!empty) LOG(INFO) << "EMPTY MAP---COSTMAP" << robot_x << " " << robot_y << "robot_yaw";
   return local_map;
 }
 void Costmap::EnQueue(int x, int y, int src_x, int src_y, std::vector<std::vector<bool>>& seen, std::priority_queue<Cell>& q, std::vector<std::vector<unsigned char>>& cost_map)
