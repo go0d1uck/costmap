@@ -17,7 +17,7 @@ Ut::Ut(std::string config_file_path)
   fs["delay_times"] >> delay_times_;
   fs["use_view"] >> use_view_;
   fs.release();
-  LOG(INFO) << "Set UT config ok";
+  LOG(INFO) << "Set UT config ok" << use_view_;
 }
 double Ut::Gamma(double theta)
 {

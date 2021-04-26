@@ -2,4 +2,4 @@
 ---
 map_size_metre: 5
 delay_times: 40
-use_view: false
+use_view: 0
