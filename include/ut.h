@@ -24,9 +24,9 @@ class Ut : protected costmap_2d::Layer {
   double inflate_cone_;
   int read_times_ = 0;
   int delay_times_ = 20;
+  double un_refresh_size_;
   bool use_view_;
   std::map<std::pair<int, int>, double> probability_map_;
-  std::map<std::pair<int, int>, bool> last_change_;
   /** @brief get pos of sensor */
   double NormalizeAngle(double angle)
   {
