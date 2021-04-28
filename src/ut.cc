@@ -18,8 +18,9 @@ Ut::Ut(std::string config_file_path)
   fs["un_refresh_size"] >> un_refresh_size_;
   fs["inflate_cone"] >> inflate_cone_;
   fs["clear_dis"] >> clear_dis_;
+  fs["single_frame"] >> single_frame_;
   fs.release();
-  LOG(INFO) << "Set UT config ok" << use_view_;
+  LOG(INFO) << "Set UT config ok";
 }
 double Ut::Gamma(double theta)
 {
@@ -96,6 +97,8 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
     ToGridMapPos(ox, oy, Ox, Oy);
     ToGridMapPos(tx, ty, Tx, Ty);
     probability_map_[std::make_pair(Tx, Ty)] = 0.91;
+    if (single_frame_)
+      continue;
     bx1 = bx0 = Ox;
     by1 = by0 = Oy;
     double mx, my;
@@ -120,14 +123,14 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
     by0 = std::min(by0, By);
     by1 = std::max(by1, By);
     /** @brief clear out-of-range data */
-    std::pair<int, int> un_refresh_min, un_refresh_max;
-    ToGridMapPos(robot_x - un_refresh_size_, robot_y - un_refresh_size_, un_refresh_min.first, un_refresh_min.second);
-    ToGridMapPos(robot_x + un_refresh_size_, robot_y + un_refresh_size_, un_refresh_max.first, un_refresh_max.second);
-    for (auto it = probability_map_.begin(); it != probability_map_.end(); it++) {
-      if (it->first.first < un_refresh_min.first || it->first.first > un_refresh_max.first || it->first.second < un_refresh_min.second || it->first.second > un_refresh_max.second) {
-        probability_map_[it->first] = 0.5;
-      }
-    }
+    //std::pair<int, int> un_refresh_min, un_refresh_max;
+    //ToGridMapPos(robot_x - un_refresh_size_, robot_y - un_refresh_size_, un_refresh_min.first, un_refresh_min.second);
+    //ToGridMapPos(robot_x + un_refresh_size_, robot_y + un_refresh_size_, un_refresh_max.first, un_refresh_max.second);
+    //for (auto it = probability_map_.begin(); it != probability_map_.end(); it++) {
+    //if (it->first.first < un_refresh_min.first || it->first.first > un_refresh_max.first || it->first.second < un_refresh_min.second || it->first.second > un_refresh_max.second) {
+    //probability_map_[it->first] = 0.5;
+    //}
+    //}
     for (int x = bx0; x <= (int)bx1; x++) {
       for (int y = by0; y <= (int)by1; y++) {
         bool update_xy_cell = true;
@@ -157,28 +160,34 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
         }
       }
     }
-    LOG(INFO) << "have_angel" << have_angle;
+    LOG(INFO) << "have_angel: " << have_angle;
   }
   read_times_++;
+  std::pair<int, int> robot_pos;
+  //if (read_times_ > 10) {
+  //ToGridMapPos(robot_x, robot_y, robot_pos.first, robot_pos.second);
+  //for (auto it = probability_map_.begin(); it != probability_map_.end(); it++) {
+  //double dis = sqrt((it->first.first - robot_pos.first) * (it->first.first - robot_pos.first) - (it->first.second - robot_pos.second) * (it->first.second - robot_pos.second)) * getResolution();
+  //if (it->second > 0.5 && dis != 0 && dis < clear_dis_) {
+  //it->second = 0.5;
+  //}
+  //}
+  //}
   LOG(INFO) << "FINISH UT COMPUTE";
 }
 std::vector<std::vector<bool>> Ut::getGridMap(double x, double y)
 {
-  double min_x = x - map_size_ / 2, min_y = y - map_size_ / 2;
-  double max_x = x + map_size_ / 2, max_y = y + map_size_ / 2;
-  std::pair<int, int> origin, min_pos, max_pos, robot_pos;
+  LOG(INFO) << "start get ut";
+  std::vector<std::vector<bool>> local_map(map_size_ / getResolution(), std::vector<bool>(map_size_ / getResolution(), false));
+  std::pair<int, int> origin;
   ToGridMapPos(x + map_size_ / 2, y + map_size_ / 2, origin.first, origin.second);
-  ToGridMapPos(min_x, min_y, min_pos.first, min_pos.second), ToGridMapPos(max_x, max_y, max_pos.first, max_pos.second);
-  ToGridMapPos(x, y, robot_pos.first, robot_pos.second);
-  std::vector<std::vector<bool>> local_map(max_pos.second - min_pos.second, std::vector<bool>(max_pos.first - min_pos.second, false));
-  for (int i = 0; i < max_pos.second - min_pos.second; i++) {
-    for (int j = 0; j < max_pos.first - min_pos.first; j++) {
+  LOG(INFO) << "ut pose:" << x << " " << y;
+  for (int i = 0; i < local_map.size(); i++) {
+    for (int j = 0; j < local_map[i].size(); j++) {
       int globl_x = origin.first - i, globl_y = origin.second - j;
-      double dis = sqrt((globl_x - robot_pos.first) * (globl_x - robot_pos.first) - (globl_y - robot_pos.second) * (globl_y - robot_pos.second));
-      if (dis*getResolution() < clear_dis_) probability_map_[std::make_pair(globl_x,globl_y)] = 0.5;
-        local_map[i][j] = (getPreProb(globl_x, globl_y) > 0.5) ? 1 : 0;
+      local_map[i][j] = (getPreProb(globl_x, globl_y) > 0.5) ? 1 : 0;
     }
   }
-  LOG(INFO) << "Get ut map";
+  LOG(INFO) << "get ut ok";
   return local_map;
 }

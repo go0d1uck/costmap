@@ -15,6 +15,7 @@
 #include <vector>
 #define LETHAL_OBSTACLE 255
 #define INSCRIBED_RADIUS_OBSTACLE 254
+#define TEST
 namespace costmap_2d {
 
 class Costmap : private Layer {

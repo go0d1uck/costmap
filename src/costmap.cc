@@ -58,7 +58,8 @@ bool Costmap::TestMap(const std::vector<std::vector<bool>>& m)
 Costmap::Costmap(double robot_x, double robot_y, double robot_yaw, std::string file_name)
     : Layer("costmap")
 {
-  LOG(INFO) << "Start initing CostMap" << "---Version:" << VERSION;
+  LOG(INFO) << "Start initing CostMap"
+            << "---Version:" << VERSION;
   LOG(INFO) << "Read config";
   LOG(INFO) << "Config Path"
             << " " << file_name;
@@ -217,9 +218,11 @@ std::vector<std::vector<unsigned char>> Costmap::UpdateCostMap(double robot_x, d
     LOG(INFO) << "ERROR cosmap";
 #endif
   bool empty = false;
-  for(auto i:local_map)
-    for(auto j:i) empty = empty || (j==LETHAL_OBSTACLE);
-  if(!empty) LOG(INFO) << "EMPTY MAP---COSTMAP" << robot_x << " " << robot_y << "robot_yaw";
+  for (auto i : local_map)
+    for (auto j : i)
+      empty = empty || (j == LETHAL_OBSTACLE);
+  if (!empty)
+    LOG(INFO) << "EMPTY MAP---COSTMAP" << robot_x << " " << robot_y << "robot_yaw";
   return local_map;
 }
 void Costmap::EnQueue(int x, int y, int src_x, int src_y, std::vector<std::vector<bool>>& seen, std::priority_queue<Cell>& q, std::vector<std::vector<unsigned char>>& cost_map)
@@ -243,12 +246,10 @@ unsigned char Costmap::GetCellCost(double x, double y, int& cx, int& cy)
   int new_y = y / this->getResolution();
   int cost_x = ox - new_x;
   int cost_y = oy - new_y;
-  if (cost_x < 0 || cost_y < 0 || cost_x >= costmap_need_.size() || (costmap_need_.size() > 0 && cost_y >= costmap_need_[0].size()))
-  {
+  if (cost_x < 0 || cost_y < 0 || cost_x >= costmap_need_.size() || (costmap_need_.size() > 0 && cost_y >= costmap_need_[0].size())) {
     return LETHAL_OBSTACLE;
-  }
-  else {
-    cx = cost_x,cy = cost_y;
+  } else {
+    cx = cost_x, cy = cost_y;
     return costmap_need_[cost_x][cost_y];
   }
 }
