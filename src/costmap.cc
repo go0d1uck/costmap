@@ -114,20 +114,17 @@ std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x, double rob
 {
   /** @brief if no map */
   LOG(INFO) << "Rending layered map...";
-  this->UpdateOrigin(robot_x, robot_y);
   if (plugins_.size() == 0) {
     LOG(INFO) << "No plugin...return self";
     return this->getMap();
   }
-  /** @brief update all plugin origin*/
-  for (auto it = plugins_.begin(); it != plugins_.end(); it++) {
-    it->second->UpdateOrigin(robot_x, robot_y);
-  }
   /** @brief start layered */
   this->ResetGridMap();
+  this->Update(this->getMap(), robot_x, robot_y);
   std::vector<std::vector<bool>> local_map = this->getMap();
   for (auto it = plugins_.begin(); it != plugins_.end(); it++) {
-    std::vector<std::vector<bool>> tmp_grid_map = it->second->getMap();
+    std::vector<std::vector<bool>> tmp_grid_map;
+    it->second->UpdateOrigin(robot_x, robot_y, tmp_grid_map);
 #ifdef TEST
     LOG(INFO) << "test map";
     if (tmp_grid_map.size() > 0) {

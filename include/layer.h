@@ -34,9 +34,9 @@ class Layer {
   int getYInMap() const { return origin_y_ / resolution_; }
   std::string getName() const { return name_; }
   /** @brief Update layer */
-  void Update(std::vector<std::vector<bool>>& grid_map, double robot_x, double robot_y);
+  void Update(const std::vector<std::vector<bool>>& grid_map, double robot_x, double robot_y);
   void ResetGridMap();
-  void UpdateOrigin(double new_x, double new_y);
+  void UpdateOrigin(double new_x, double new_y,std::vector<std::vector<bool>>&);
   void setGridMap(std::vector<std::vector<bool>>& grid_map) { grid_map_ = grid_map; }
   std::vector<std::vector<bool>> getMap() { return grid_map_; }
 };

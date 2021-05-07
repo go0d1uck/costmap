@@ -55,6 +55,12 @@ class Costmap : private Layer {
   bool TestMap(const std::vector<std::vector<bool>>& m);
 #endif
   public:
+  void getGloblPos(const int& x, const int& y, double& globl_x, double& glob_y)
+  {
+    std::pair<double, double> origin;
+    origin.first = getOriginX(), origin.second = getOriginY();
+    globl_x = origin.first - x*getResolution(), glob_y = origin.second - y*getResolution();
+  }
   std::vector<std::vector<bool>> GetLayeredMap(double new_robot_x, double new_robot_y);
   static Costmap& getInstance(std::string file_name)
   {
@@ -90,11 +96,12 @@ class Costmap : private Layer {
     double dis_mile = GetDistanceInGrid(t) * this->getResolution();
     if (dis_mile > inflation_radius_)
       return 0;
-    else
-    {
+    else {
       double t = ComputeCost(dis_mile);
-      if (t < 10) return 0;
-      else return t;
+      if (t < 10)
+        return 0;
+      else
+        return t;
     }
   }
   inline unsigned int GetDistanceInGrid(Cell& t)
