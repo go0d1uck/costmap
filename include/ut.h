@@ -29,6 +29,7 @@ class Ut : protected costmap_2d::Layer {
   double clear_dis_;
   bool single_frame_;
   std::map<std::pair<int, int>, double> probability_map_;
+  std::mutex ut_map_mutex_;
   /** @brief get pos of sensor */
   double NormalizeAngle(double angle)
   {

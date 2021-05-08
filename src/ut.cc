@@ -27,7 +27,8 @@ double Ut::Gamma(double theta)
   if (fabs(theta) > max_angle_)
     return 0.0;
   else
-    return 1 - pow(theta / max_angle_, 2);
+    return 1;
+  //return 1 - pow(theta / max_angle_, 2);
 }
 
 double Ut::Delta(double phi)
@@ -75,8 +76,12 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
     probability_map_.clear();
     read_times_ = 0;
   }
+  ut_map_mutex_.lock();
+  if (single_frame_)
+    probability_map_.clear();
   for (int i = 0; i < data.size(); i++) {
     max_angle_ = data[i].fov / 2;
+    if(data[i].detect_dis == -1) continue; //for debug ignore sensor
     int have_angle = 0;
     double target_x_local = data[i].detect_dis * cos(data[i].toward_angle);
     double target_y_local = data[i].detect_dis * sin(data[i].toward_angle);
@@ -97,8 +102,6 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
     ToGridMapPos(ox, oy, Ox, Oy);
     ToGridMapPos(tx, ty, Tx, Ty);
     probability_map_[std::make_pair(Tx, Ty)] = 0.91;
-    if (single_frame_)
-      continue;
     bx1 = bx0 = Ox;
     by1 = by0 = Oy;
     double mx, my;
@@ -155,6 +158,7 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
           wx = 1.0 * x * getResolution(), wy = 1.0 * y * getResolution();
           if (data[i].detect_dis > data[i].max_dis)
             clear = true;
+          probability_map_[std::make_pair(x, y)] = 0.5;
           update_cell(ox, oy, theta, data[i].detect_dis, wx, wy, clear, x, y);
           have_angle++;
         }
@@ -163,7 +167,8 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
     LOG(INFO) << "have_angel: " << have_angle;
   }
   read_times_++;
-  std::pair<int, int> robot_pos;
+  ut_map_mutex_.unlock();
+  //std::pair<int, int> robot_pos;
   //if (read_times_ > 10) {
   //ToGridMapPos(robot_x, robot_y, robot_pos.first, robot_pos.second);
   //for (auto it = probability_map_.begin(); it != probability_map_.end(); it++) {
@@ -178,6 +183,7 @@ void Ut::FeedData(std::vector<UtSensor> data, double robot_x, double robot_y, do
 std::vector<std::vector<bool>> Ut::getGridMap(double x, double y)
 {
   LOG(INFO) << "start get ut";
+  ut_map_mutex_.lock();
   std::vector<std::vector<bool>> local_map(map_size_ / getResolution(), std::vector<bool>(map_size_ / getResolution(), false));
   std::pair<int, int> origin;
   ToGridMapPos(x + map_size_ / 2, y + map_size_ / 2, origin.first, origin.second);
@@ -188,6 +194,7 @@ std::vector<std::vector<bool>> Ut::getGridMap(double x, double y)
       local_map[i][j] = (getPreProb(globl_x, globl_y) > 0.5) ? 1 : 0;
     }
   }
+  ut_map_mutex_.unlock();
   LOG(INFO) << "get ut ok";
   return local_map;
 }
