@@ -10,10 +10,11 @@ Laser::Laser(const std::string& config_file_path)
   LOG(INFO) << "Start read config";
   cv::FileStorage fs(config_file_path, cv::FileStorage::READ);
   fs["map_size_metre"] >> map_size_;
-  fs["sensor_x"] >> senor_x_;
+  fs["sensor_x"] >> sensor_x_;
   fs["sensor_y"] >> sensor_y_;
   fs["sensor_toward_angle"] >> sensor_toward_angle_;
   fs["max_dis"] >> max_dis_;
+  fs["clear_threshold"] >> clear_threshold_;
   fs.release();
   LOG(INFO) << "Set Laser config ok";
 }
@@ -44,13 +45,11 @@ void Laser::FeedDate(std::vector<float> ranges, std::vector<float> angles, float
       continue; //ignored dis
     double target_x_local = ranges[i] * cos(angles[i]);
     double target_y_local = ranges[i] * sin(angles[i]);
-    double sensor_x_local = 0, sensor_y_local = 0;
-    double ox, oy, tx, ty;
-    LocalToGlobl(angles[i], ranges[i], sensor_x_local, sensor_y_local, ox, oy, robot_x, robot_y, robot_yaw);
-    LocalToGlobl(angles[i], ranges[i], target_x_local, target_y_local, tx, ty, robot_x, robot_y, robot_yaw);
-    double dx = tx - ox, dy = ty - oy, theta = atan2(dy, dx), d = sqrt(dx * dx + dy * dy);
+    double tx, ty;
+    LocalToGlobl(angles[i], target_x_local, target_y_local, tx, ty, robot_x, robot_y, robot_yaw);
     int Tx, Ty;
-    ToGridMapPos(tx, ty, Tx, Ty);
+    //ToGridMapPos(tx, ty, Tx, Ty);
+    ToGridMapPos(target_x_local,target_y_local,Tx, Ty);
     save_map_[std::make_pair(Tx, Ty)] = true;
   }
   laser_map_mutex_.unlock();
