@@ -14,7 +14,6 @@ Laser::Laser(const std::string& config_file_path)
   fs["sensor_y"] >> sensor_y_;
   fs["sensor_toward_angle"] >> sensor_toward_angle_;
   fs["max_dis"] >> max_dis_;
-  fs["clear_threshold"] >> clear_threshold_;
   fs.release();
   LOG(INFO) << "Set Laser config ok";
 }
@@ -46,10 +45,11 @@ void Laser::FeedDate(std::vector<float> ranges, std::vector<float> angles, float
     double target_x_local = ranges[i] * cos(angles[i]);
     double target_y_local = ranges[i] * sin(angles[i]);
     double tx, ty;
-    LocalToGlobl(angles[i], target_x_local, target_y_local, tx, ty, robot_x, robot_y, robot_yaw);
+    LocalToGlobl(target_x_local, target_y_local, tx, ty, robot_x, robot_y, robot_yaw);
     int Tx, Ty;
-    //ToGridMapPos(tx, ty, Tx, Ty);
-    ToGridMapPos(target_x_local,target_y_local,Tx, Ty);
+    ToGridMapPos(tx, ty, Tx, Ty);
+    if ((robot_x - tx) * (robot_x - tx) + (robot_y - ty) * (robot_y - ty) < 0.3 * 0.3)
+      continue;
     save_map_[std::make_pair(Tx, Ty)] = true;
   }
   laser_map_mutex_.unlock();

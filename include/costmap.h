@@ -1,6 +1,7 @@
 #ifndef COSTMAP_H
 #define COSTMAP_H
 #include "layer.h"
+#include "ut.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -59,9 +60,9 @@ class Costmap : private Layer {
   {
     std::pair<double, double> origin;
     origin.first = getOriginX(), origin.second = getOriginY();
-    globl_x = origin.first - x*getResolution(), glob_y = origin.second - y*getResolution();
+    globl_x = origin.first - x * getResolution(), glob_y = origin.second - y * getResolution();
   }
-  std::vector<std::vector<bool>> GetLayeredMap(double new_robot_x, double new_robot_y);
+  std::vector<std::vector<bool>> GetLayeredMap(double new_robot_x, double new_robot_y, double new_robot_yaw);
   static Costmap& getInstance(std::string file_name)
   {
     static Costmap instance_ = Costmap(0.0, 0.0, 0.0, file_name);
@@ -94,10 +95,16 @@ class Costmap : private Layer {
   {
     /** @brief out of inflation radius is zero*/
     double dis_mile = GetDistanceInGrid(t) * this->getResolution();
+    int obstacle_x = -t.mx + map_size_ / this->getResolution() / 2;
+    int obstacle_y = -t.my + map_size_ / this->getResolution() / 2;
+    double obstacle_angle_in_robot = std::atan2(obstacle_y, obstacle_x);
+    double result = fmod(robot_yaw_ - obstacle_angle_in_robot + M_PI, 2.0 * M_PI);
+    result = (result <= 0) ? (result + M_PI) : (result - M_PI);
+    bool right_toward_in_robot = result > 0;
     if (dis_mile > inflation_radius_)
       return 0;
     else {
-      double t = ComputeCost(dis_mile);
+      unsigned char t = ComputeCost(right_toward_in_robot ? (dis_mile * 1.3) : dis_mile);
       if (t < 10)
         return 0;
       else

@@ -6,9 +6,10 @@
 #include <utility>
 #include <vector>
 namespace costmap_2d {
-void Layer::Update(const std::vector<std::vector<bool>>& grid_map, double robot_x, double robot_y)
+void Layer::Update(const std::vector<std::vector<bool>>& grid_map, double robot_x, double robot_y,double robot_yaw)
 {
   grid_map_ = grid_map;
+  robot_yaw_ = robot_yaw;
   origin_x_ = robot_x + (this->getSize().first * this->getResolution()) / 2;
   origin_y_ = robot_y + (this->getSize().second * this->getResolution()) / 2;
 }

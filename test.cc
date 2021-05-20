@@ -40,7 +40,8 @@ int main()
 {
   //freopen("/home/antraume/costmap/test/grid_data.txt", "r", stdin);
   //freopen("~/py_project/visual_map/heatpot/gridmap1.txt", "r", stdin);
-  freopen("/home/antraume/Downloads/NitroShare/lidar_data.txt", "r", stdin);
+  //freopen("/home/antraume/Downloads/NitroShare/square.txt", "r", stdin);
+  freopen("/home/antraume/Downloads/NitroShare/data/lidar_data-512-2.txt", "r", stdin);
   //double x, y, yaw;
   //vector<UtSensor> input;
   //input.resize(4);
@@ -92,31 +93,14 @@ int main()
   //cout << endl;
   //}
   // static map test
-  //costmap_2d::Costmap::getInstance("/home/antraume/costmap/costmap_config.yaml");
-  //auto static_map = vector<vector<bool>>(100, vector<bool>(100, 0));
-  //for (int i = 50; i < 100; i++)
-  //for (int j = 50; j < 100; j++)
-  //static_map[i][j] = 1;
-  //std::vector<std::vector<bool>> testMap(201, std::vector<bool>(201, false));
-  //SetTestMap(testMap, 66, 100, 0.4 / 0.05, 0.15 / 0.05);
-  //SetTestMap(testMap, 51, 41, 4.1 / 0.05, 5 / 0.05);
-  int x, y;
-  double gx, gy;
-  Laser laser_layer("/home/antraume/costmap/laser_config.yaml");
-  string range, angle;
-  getline(cin, range);
-  getline(cin, angle);
-  //transfer
-  vector<string> t;
-  vector<float> r, a;
-  split(range, t);
-  for (auto v : t) {
-    r.push_back(stof(v));
-  }
-  split(angle, t);
-  for (auto v : t)
-    a.push_back(stof(v));
-  laser_layer.FeedDate(r, a, 0, 0, 0);
-  printMap(laser_layer.getGridMap(0, 0));
+  costmap_2d::Costmap::getInstance("/home/antraume/costmap/costmap_config.yaml");
+  auto static_map = vector<vector<bool>>(100, vector<bool>(100, 0));
+  for (int i = 40; i < 60; i++)
+    for (int j = 40; j < 60; j++)
+      static_map[i][j] = 1;
+  costmap_2d::Costmap::getInstance().AddPlug(static_map, "test", 0, 0, 0);
+  std::cout << "test" << std::endl;
+  printMap(costmap_2d::Costmap::getInstance().UpdateCostMap(0, 0, 0.78));
+  std::cout << "test" << std::endl;
   return 0;
 }

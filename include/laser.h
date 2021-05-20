@@ -11,10 +11,6 @@ private:
     double map_size_, sensor_x_, sensor_y_, sensor_toward_angle_, max_dis_;
     std::mutex laser_map_mutex_;
     std::map<std::pair<int, int>, bool> save_map_;
-    int clear_threshold_;
-    int direct_[8][2] = {
-        -1, 0, 1, 0, 0, -1, 0, 1, 1, 1, -1, -1, 1, -1, -1, 1
-    };
     void ToGridMapPos(double x, double y, int& grid_x, int& grid_y)
     {
         grid_x = int(x / getResolution()), grid_y = int(y / getResolution());
@@ -25,10 +21,10 @@ private:
         double destination_y = source_x * sin(theta) + source_y * cos(theta) + o_y;
         return std::make_pair(destination_x, destination_y);
     }
-    void LocalToGlobl(double toward_angle, double local_x, double local_y, double& global_x, double& global_y, double robot_x, double robot_y, double robot_yaw)
+    void LocalToGlobl(double local_x, double local_y, double& global_x, double& global_y, double robot_x, double robot_y, double robot_yaw)
     {
-        double x = TransCoordinate(local_x, local_y, sensor_toward_angle_, sensor_x_, sensor_y_).first;
-        double y = TransCoordinate(local_x, local_y, sensor_toward_angle_, sensor_x_, sensor_y_).second;
+        double x = TransCoordinate(local_x, local_y, sensor_toward_angle_, sensor_y_, sensor_x_).first;
+        double y = TransCoordinate(local_x, local_y, sensor_toward_angle_, sensor_y_, sensor_x_).second;
         /** @brief robot coordinate */
         global_x = TransCoordinate(x, y, robot_yaw, robot_x, robot_y).first;
         global_y = TransCoordinate(x, y, robot_yaw, robot_x, robot_y).second;

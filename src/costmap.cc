@@ -105,12 +105,12 @@ bool Costmap::AddPlug(std::vector<std::vector<bool>>& gridMap, std::string name,
     plug_map_mutex_.unlock();
   }
   layered_mutex_.lock();
-  plugins_[name]->Update(gridMap, robot_x, robot_y);
+  plugins_[name]->Update(gridMap, robot_x, robot_y,robot_yaw);
   layered_mutex_.unlock();
   LOG(INFO) << "Plugin---" << name << "---finished";
   return true;
 }
-std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x, double robot_y)
+std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x, double robot_y,double robot_yaw)
 {
   /** @brief if no map */
   LOG(INFO) << "Rending layered map...";
@@ -120,7 +120,7 @@ std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x, double rob
   }
   /** @brief start layered */
   this->ResetGridMap();
-  this->Update(this->getMap(), robot_x, robot_y);
+  this->Update(this->getMap(), robot_x, robot_y,robot_yaw);
   std::vector<std::vector<bool>> local_map = this->getMap();
   for (auto it = plugins_.begin(); it != plugins_.end(); it++) {
     std::vector<std::vector<bool>> tmp_grid_map;
@@ -206,7 +206,7 @@ std::vector<std::vector<unsigned char>> Costmap::UpdateCostMap(double robot_x, d
 {
   std::vector<std::vector<unsigned char>> local_map;
   layered_mutex_.lock();
-  GetLayeredMap(robot_x, robot_y);
+  GetLayeredMap(robot_x, robot_y,robot_yaw);
   layered_mutex_.unlock();
   Inflation(local_map);
   costmap_need_ = local_map;

@@ -13,8 +13,6 @@ class Layer {
   private:
   std::vector<std::vector<bool>> grid_map_;
   std::string name_;
-  double origin_x_;
-  double origin_y_;
   double resolution_;
 
   public:
@@ -26,7 +24,7 @@ class Layer {
   }
   /** @brief Destructor for Layer */
   ~Layer() { }
-  std::pair<int, int> getSize() const { return std::make_pair(grid_map_.size(), grid_map_.size()>0?grid_map_[0].size():0); }
+  std::pair<int, int> getSize() const { return std::make_pair(grid_map_.size(), grid_map_.size() > 0 ? grid_map_[0].size() : 0); }
   double getOriginX() const { return origin_x_; }
   double getOriginY() const { return origin_y_; }
   double getResolution() const { return resolution_; }
@@ -34,11 +32,16 @@ class Layer {
   int getYInMap() const { return origin_y_ / resolution_; }
   std::string getName() const { return name_; }
   /** @brief Update layer */
-  void Update(const std::vector<std::vector<bool>>& grid_map, double robot_x, double robot_y);
+  void Update(const std::vector<std::vector<bool>>& grid_map, double robot_x, double robot_y, double yaw);
   void ResetGridMap();
-  void UpdateOrigin(double new_x, double new_y,std::vector<std::vector<bool>>&);
+  void UpdateOrigin(double new_x, double new_y, std::vector<std::vector<bool>>&);
   void setGridMap(std::vector<std::vector<bool>>& grid_map) { grid_map_ = grid_map; }
   std::vector<std::vector<bool>> getMap() { return grid_map_; }
+
+  protected:
+  double origin_x_;
+  double origin_y_;
+  double robot_yaw_;
 };
 } // namespace costmap
 
