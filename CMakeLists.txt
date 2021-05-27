@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
 
 find_package(OpenCV REQUIRED)
-include_directories(include)
+include_directories(inc)
 include_directories(${OpenCV_INCLUDE_DIRS})
 link_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(test ${PROJECT_SOURCE_DIR}/test.cc)

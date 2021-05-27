@@ -1,11 +1,7 @@
-#include <glog/logging.h>
-
 #include <algorithm>
 #include <cmath>
 #include <exception>
 #include <new>
-#include <opencv2/core/persistence.hpp>
-#include <opencv2/opencv.hpp>
 #include <queue>
 #include <string>
 #include <utility>
@@ -13,6 +9,10 @@
 
 #include "costmap.h"
 #include "layer.h"
+#include "glog/logging.h"
+#include "opencv2/core/persistence.hpp"
+#include "opencv2/opencv.hpp"
+
 #define VERSION 3.0
 namespace costmap_2d {
 #ifdef TEST
@@ -149,16 +149,13 @@ std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x,
     }
 #endif
     int offset = (it->second->getSize().first - this->getSize().first) / 2;
-    if (offset > 0) /** @brief the sensor map is bigger than cost map */
-    {
+    if (offset > 0) { /** @brief the sensor map is bigger than cost map */
       for (int i = 0; i < local_map.size() && i < tmp_grid_map.size(); i++) {
         for (int j = 0; j < local_map[i].size() && j < tmp_grid_map[i].size();
              j++) {
           local_map[i][j] =
-              local_map[i][j] |
-              tmp_grid_map[i + offset]
-                          [j + offset]; /** @brief if one is obstacle,the map
-                                           obstacle */
+              local_map[i][j] | tmp_grid_map[i + offset][j + offset];
+          /** @brief if one is obstacle,the map obstacle */
         }
       }
     } else {

@@ -3,16 +3,16 @@
 #include <string>
 #include <vector>
 
-#include "include/costmap.h"
-#include "include/laser.h"
-#include "include/ut.h"
-void split(const std::string& s, std::vector<std::string>* tokens,
+#include "costmap.h"
+#include "laser.h"
+#include "ut.h"
+void split(const std::string& s, std::vector<bool>* tokens,
            const char& delim = ' ') {
   tokens->clear();
   size_t lastPos = s.find_first_not_of(delim, 0);
   size_t pos = s.find(delim, lastPos);
   while (lastPos != std::string::npos) {
-    tokens->emplace_back(s.substr(lastPos, pos - lastPos));
+    tokens->emplace_back(s.substr(lastPos, pos - lastPos) == "1");
     lastPos = s.find_first_not_of(delim, pos);
     pos = s.find(delim, lastPos);
   }
@@ -40,17 +40,16 @@ int main() {
   // freopen("/home/antraume/costmap/test/grid_data.txt", "r", stdin);
   // freopen("~/py_project/visual_map/heatpot/gridmap1.txt", "r", stdin);
   // freopen("/home/antraume/Downloads/NitroShare/square.txt", "r", stdin);
-  freopen("/home/antraume/Downloads/NitroShare/data/lidar_data-512-2.txt", "r",
-          stdin);
+  freopen("/home/antraume/Downloads/NitroShare/Gmap01.txt", "r", stdin);
   costmap_2d::Costmap::getInstance(
       "/home/antraume/costmap/costmap_config.yaml");
-  auto static_map =
-      std::vector<std::vector<bool>>(100, std::vector<bool>(100, 0));
-  for (int i = 40; i < 60; i++)
-    for (int j = 40; j < 60; j++) static_map[i][j] = 1;
+  auto static_map = std::vector<std::vector<bool>>(194);
+  std::string input;
+  for (int i = 0; i < 194; ++i) {
+    std::getline(std::cin, input);
+    split(input, &static_map[i]);
+  }
   costmap_2d::Costmap::getInstance().AddPlug(static_map, "test", 0, 0, 0);
-  std::cout << "test" << std::endl;
-  printMap(costmap_2d::Costmap::getInstance().UpdateCostMap(0, 0, 0.78));
-  std::cout << "test" << std::endl;
+  printMap(costmap_2d::Costmap::getInstance().UpdateCostMap(0, 0, 0));
   return 0;
 }
