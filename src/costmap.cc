@@ -8,14 +8,59 @@
 #include <vector>
 
 #include "costmap.h"
-#include "layer.h"
 #include "glog/logging.h"
+#include "layer.h"
 #include "opencv2/core/persistence.hpp"
 #include "opencv2/opencv.hpp"
 
-#define VERSION 3.0
+#define VERSION 3.1
 namespace costmap_2d {
 #ifdef TEST
+void Costmap::TailMapAInMapB(const std::vector<std::vector<bool>>& src_map,
+                             std::vector<std::vector<bool>>& des_map) {
+  int offset_x = (src_map.size() - des_map.size()) / 2;
+  int offset_y = (src_map[0].size() - des_map[0].size()) / 2;
+  if (offset_x >= 0 &&
+      offset_y >= 0) { /** @brief the sensor map is bigger than cost map */
+    for (int i = 0; i < des_map.size() && i < src_map.size(); i++) {
+      for (int j = 0; j < des_map[i].size() && j < src_map[i].size(); j++) {
+        des_map[i][j] = des_map[i][j] | src_map[i + offset_x][j + offset_y];
+        /** @brief if one is obstacle,the map obstacle */
+      }
+    }
+  } else if (offset_x <= 0 && offset_y <= 0) {
+    offset_x = abs(offset_x);
+    offset_y = abs(offset_y);
+    for (int i = 0; i < des_map.size() && i < src_map.size(); i++) {
+      for (int j = 0; j < des_map[i].size() && j < src_map[i].size(); j++) {
+        des_map[i + offset_x][j + offset_y] =
+            des_map[i + offset_x][j + offset_y] |
+            src_map[i][j]; /** @brief if one layer is obstacle,the master
+                                   map is obstacle */
+      }
+    }
+  } else if (offset_x >= 0 && offset_y <= 0) {
+    offset_y = abs(offset_y);
+    for (int i = 0; i < des_map.size() && i < src_map.size(); i++) {
+      for (int j = 0; j < des_map[i].size() && j < src_map[i].size(); j++) {
+        des_map[i][j + offset_y] =
+            des_map[i][j + offset_y] |
+            src_map[i + offset_x][j]; /** @brief if one layer is obstacle,the
+                                     master map is obstacle */
+      }
+    }
+  } else if (offset_x <= 0 && offset_y >= 0) {
+    offset_x = abs(offset_x);
+    for (int i = 0; i < des_map.size() && i < src_map.size(); i++) {
+      for (int j = 0; j < des_map[i].size() && j < src_map[i].size(); j++) {
+        des_map[i + offset_x][j] =
+            des_map[i + offset_x][j] |
+            src_map[i][j + offset_y]; /** @brief if one layer is obstacle,the
+                                       master map is obstacle */
+      }
+    }
+  }
+}
 bool Costmap::TestMap(const std::vector<std::vector<bool>>& m) {
   int center_i = m.size() / 2;
   int center_j = m[0].size() / 2;
@@ -132,8 +177,9 @@ std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x,
   this->Update(this->getMap(), robot_x, robot_y, robot_yaw);
   std::vector<std::vector<bool>> local_map = this->getMap();
   for (auto it = plugins_.begin(); it != plugins_.end(); it++) {
-    std::vector<std::vector<bool>> tmp_grid_map;
-    it->second->UpdateOrigin(robot_x, robot_y, tmp_grid_map);
+    std::vector<std::vector<bool>> tmp_grid_map = this->getMap();
+    it->second->UpdateOrigin(robot_x, robot_y, tmp_grid_map,
+                             it->first == "static");
 #ifdef TEST
     LOG(INFO) << "test map";
     if (tmp_grid_map.size() > 0) {
@@ -148,28 +194,7 @@ std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x,
       }
     }
 #endif
-    int offset = (it->second->getSize().first - this->getSize().first) / 2;
-    if (offset > 0) { /** @brief the sensor map is bigger than cost map */
-      for (int i = 0; i < local_map.size() && i < tmp_grid_map.size(); i++) {
-        for (int j = 0; j < local_map[i].size() && j < tmp_grid_map[i].size();
-             j++) {
-          local_map[i][j] =
-              local_map[i][j] | tmp_grid_map[i + offset][j + offset];
-          /** @brief if one is obstacle,the map obstacle */
-        }
-      }
-    } else {
-      offset = abs(offset);
-      for (int i = 0; i < local_map.size() && i < tmp_grid_map.size(); i++) {
-        for (int j = 0; j < local_map[i].size() && j < tmp_grid_map[i].size();
-             j++) {
-          local_map[i + offset][j + offset] =
-              local_map[i + offset][j + offset] |
-              tmp_grid_map[i]
-                          [j]; /** @brief if one is obstacle,the map obstacle */
-        }
-      }
-    }
+    TailMapAInMapB(tmp_grid_map, local_map);
   }
   this->setGridMap(local_map);
   LOG(INFO) << "Rending finished";
