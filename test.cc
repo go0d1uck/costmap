@@ -12,7 +12,7 @@ void split(const std::string& s, std::vector<bool>* tokens,
   size_t lastPos = s.find_first_not_of(delim, 0);
   size_t pos = s.find(delim, lastPos);
   while (lastPos != std::string::npos) {
-    tokens->emplace_back(s.substr(lastPos, pos - lastPos) == "1");
+    tokens->push_back(s.substr(lastPos, pos - lastPos) == "1");
     lastPos = s.find_first_not_of(delim, pos);
     pos = s.find(delim, lastPos);
   }
@@ -40,23 +40,13 @@ int main() {
   // freopen("/home/antraume/costmap/test/grid_data.txt", "r", stdin);
   // freopen("~/py_project/visual_map/heatpot/gridmap1.txt", "r", stdin);
   // freopen("/home/antraume/Downloads/NitroShare/square.txt", "r", stdin);
-  freopen("/home/antraume/Downloads/NitroShare/data_5_31.txt", "r", stdin);
   costmap_2d::Costmap::getInstance(
       "/home/antraume/costmap/costmap_config.yaml");
-  auto static_map = std::vector<std::vector<bool>>(150);
-  std::string input;
-  for (int i = 0; i < 150; ++i) {
-    std::getline(std::cin, input);
-    split(input, &static_map[i]);
-  }
-  costmap_2d::Costmap::getInstance().AddPlug(static_map, "static", 1, 0, 0);
+  std::vector<std::vector<bool>> static_map;
+  costmap_2d::Costmap::getInstance().AddPlug(static_map, "static", 0, 0, 0);
   printMap(costmap_2d::Costmap::getInstance().GetLayeredMap(1,0, 0));
   //printMap(costmap_2d::Costmap::getInstance().GetLayeredMap(2, 0, 0));
   //printMap(costmap_2d::Costmap::getInstance().GetLayeredMap(2.45, 0, 0));
   //printMap(costmap_2d::Costmap::getInstance().UpdateCostMap(0, 0, 0));
-  int mx, my;
-  LOG(INFO) << int(
-      costmap_2d::Costmap::getInstance().GetCellCost(1, 0, mx, my));
-  LOG(INFO) << mx << " " << my;
   return 0;
 }

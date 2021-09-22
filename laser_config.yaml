@@ -1,8 +1,0 @@
-%YAML 1.2
----
-map_size_metre: 2
-sensor_x: 0.16
-sensor_y: 0
-sensor_toward_angle: -3.0717
-max_dis: 2
-clear_threshold: 3

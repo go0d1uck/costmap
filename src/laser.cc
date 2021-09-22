@@ -39,6 +39,7 @@ void Laser::FeedDate(std::vector<float> ranges, std::vector<float> angles, float
   LOG(INFO) << "START LARSER COMPUTE";
   laser_map_mutex_.lock();
   save_map_.clear();
+  if(ranges.size() != angles.size()) return;
   for (int i = 0; i < ranges.size(); i++) {
     if (ranges[i] == 0 || ranges[i] > max_dis_)
       continue; //ignored dis

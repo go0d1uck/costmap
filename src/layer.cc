@@ -64,7 +64,7 @@ void Layer::UpdateOrigin(double robot_x, double robot_y,
                          std::vector<bool>(grid_map_[0].size(), fill_value));
       }
     }
-    if (new_grid_map[0].size() > grid_map_[0].size()) {
+    if (new_grid_map.size() != 0 && new_grid_map[0].size() > grid_map_[0].size()) {
       for (int j = 0; j < new_grid_map.size(); j++) {
         int cnt = (new_grid_map[j].size() - grid_map_[j].size())/2;
         for (int i = 0; i < cnt; i++) {

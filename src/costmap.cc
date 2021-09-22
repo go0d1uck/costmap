@@ -13,15 +13,17 @@
 #include "opencv2/core/persistence.hpp"
 #include "opencv2/opencv.hpp"
 
-#define VERSION 3.1
+#define VERSION 3.2
 namespace costmap_2d {
 #ifdef TEST
 void Costmap::TailMapAInMapB(const std::vector<std::vector<bool>>& src_map,
-                             std::vector<std::vector<bool>>& des_map) {
+    std::vector<std::vector<bool>>& des_map)
+{
+  if (src_map.size() == 0 || des_map.size() == 0)
+    return;
   int offset_x = (src_map.size() - des_map.size()) / 2;
   int offset_y = (src_map[0].size() - des_map[0].size()) / 2;
-  if (offset_x >= 0 &&
-      offset_y >= 0) { /** @brief the sensor map is bigger than cost map */
+  if (offset_x >= 0 && offset_y >= 0) { /** @brief the sensor map is bigger than cost map */
     for (int i = 0; i < des_map.size() && i < src_map.size(); i++) {
       for (int j = 0; j < des_map[i].size() && j < src_map[i].size(); j++) {
         des_map[i][j] = des_map[i][j] | src_map[i + offset_x][j + offset_y];
@@ -33,9 +35,7 @@ void Costmap::TailMapAInMapB(const std::vector<std::vector<bool>>& src_map,
     offset_y = abs(offset_y);
     for (int i = 0; i < des_map.size() && i < src_map.size(); i++) {
       for (int j = 0; j < des_map[i].size() && j < src_map[i].size(); j++) {
-        des_map[i + offset_x][j + offset_y] =
-            des_map[i + offset_x][j + offset_y] |
-            src_map[i][j]; /** @brief if one layer is obstacle,the master
+        des_map[i + offset_x][j + offset_y] = des_map[i + offset_x][j + offset_y] | src_map[i][j]; /** @brief if one layer is obstacle,the master
                                    map is obstacle */
       }
     }
@@ -43,9 +43,7 @@ void Costmap::TailMapAInMapB(const std::vector<std::vector<bool>>& src_map,
     offset_y = abs(offset_y);
     for (int i = 0; i < des_map.size() && i < src_map.size(); i++) {
       for (int j = 0; j < des_map[i].size() && j < src_map[i].size(); j++) {
-        des_map[i][j + offset_y] =
-            des_map[i][j + offset_y] |
-            src_map[i + offset_x][j]; /** @brief if one layer is obstacle,the
+        des_map[i][j + offset_y] = des_map[i][j + offset_y] | src_map[i + offset_x][j]; /** @brief if one layer is obstacle,the
                                      master map is obstacle */
       }
     }
@@ -53,20 +51,20 @@ void Costmap::TailMapAInMapB(const std::vector<std::vector<bool>>& src_map,
     offset_x = abs(offset_x);
     for (int i = 0; i < des_map.size() && i < src_map.size(); i++) {
       for (int j = 0; j < des_map[i].size() && j < src_map[i].size(); j++) {
-        des_map[i + offset_x][j] =
-            des_map[i + offset_x][j] |
-            src_map[i][j + offset_y]; /** @brief if one layer is obstacle,the
+        des_map[i + offset_x][j] = des_map[i + offset_x][j] | src_map[i][j + offset_y]; /** @brief if one layer is obstacle,the
                                        master map is obstacle */
       }
     }
   }
 }
-bool Costmap::TestMap(const std::vector<std::vector<bool>>& m) {
+bool Costmap::TestMap(const std::vector<std::vector<bool>>& m)
+{
   int center_i = m.size() / 2;
   int center_j = m[0].size() / 2;
   std::map<std::pair<int, int>, bool> seen;
   std::queue<std::pair<int, int>> q;
-  if (m[center_i][center_j] == 1) return false;
+  if (m[center_i][center_j] == 1)
+    return false;
   q.push(std::make_pair(center_i, center_j));
   while (!q.empty()) {
     std::pair<int, int> t = q.front();
@@ -78,26 +76,22 @@ bool Costmap::TestMap(const std::vector<std::vector<bool>>& m) {
       return false;
     } else {
       double dis = std::hypot(center_i - t.first - 1, center_j - t.second);
-      if (!seen[std::make_pair(t.first + 1, t.second)] &&
-          dis <= inscribed_radius_ * 20) {
+      if (!seen[std::make_pair(t.first + 1, t.second)] && dis <= inscribed_radius_ * 20) {
         q.push(std::make_pair(t.first + 1, t.second));
         seen[std::make_pair(t.first + 1, t.second)] = true;
       }
       dis = std::hypot(center_i - t.first + 1, center_j - t.second);
-      if (!seen[std::make_pair(t.first - 1, t.second)] &&
-          dis <= inscribed_radius_ * 20) {
+      if (!seen[std::make_pair(t.first - 1, t.second)] && dis <= inscribed_radius_ * 20) {
         q.push(std::make_pair(t.first - 1, t.second));
         seen[std::make_pair(t.first - 1, t.second)] = true;
       }
       dis = std::hypot(center_i - t.first, center_j - t.second - 1);
-      if (!seen[std::make_pair(t.first, t.second + 1)] &&
-          dis <= inscribed_radius_ * 20) {
+      if (!seen[std::make_pair(t.first, t.second + 1)] && dis <= inscribed_radius_ * 20) {
         q.push(std::make_pair(t.first, t.second + 1));
         seen[std::make_pair(t.first, t.second + 1)] = true;
       }
       dis = std::hypot(center_i - t.first, center_j - t.second + 1);
-      if (!seen[std::make_pair(t.first, t.second - 1)] &&
-          dis <= inscribed_radius_ * 20) {
+      if (!seen[std::make_pair(t.first, t.second - 1)] && dis <= inscribed_radius_ * 20) {
         q.push(std::make_pair(t.first, t.second - 1));
         seen[std::make_pair(t.first + 1, t.second)] = true;
       }
@@ -107,8 +101,9 @@ bool Costmap::TestMap(const std::vector<std::vector<bool>>& m) {
 }
 #endif
 Costmap::Costmap(double robot_x, double robot_y, double robot_yaw,
-                 std::string file_name)
-    : Layer("costmap") {
+    std::string file_name)
+    : Layer("costmap")
+{
   LOG(INFO) << "Start initing CostMap"
             << "---Version:" << VERSION;
   LOG(INFO) << "Read config";
@@ -139,7 +134,8 @@ Costmap::Costmap(double robot_x, double robot_y, double robot_yaw,
   this->ResetGridMap();
   LOG(INFO) << "initing CostMap...OK";
 }
-Costmap::~Costmap() {
+Costmap::~Costmap()
+{
   /** @brief free memory */
   if (plugins_.size() > 0) {
     plugins_.clear();
@@ -147,8 +143,12 @@ Costmap::~Costmap() {
   }
 }
 bool Costmap::AddPlug(std::vector<std::vector<bool>>& gridMap, std::string name,
-                      double robot_x, double robot_y, double robot_yaw) {
+    double robot_x, double robot_y, double robot_yaw)
+{
   LOG(INFO) << "Adding plugin---" << name;
+  if (gridMap.size() == 0) {
+    return false;
+  }
   if (plugins_.find(name) != plugins_.end()) {
     LOG(INFO) << "Plugin is existed--just update";
   } else {
@@ -164,8 +164,9 @@ bool Costmap::AddPlug(std::vector<std::vector<bool>>& gridMap, std::string name,
   return true;
 }
 std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x,
-                                                      double robot_y,
-                                                      double robot_yaw) {
+    double robot_y,
+    double robot_yaw)
+{
   /** @brief if no map */
   LOG(INFO) << "Rending layered map...";
   if (plugins_.size() == 0) {
@@ -179,7 +180,7 @@ std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x,
   for (auto it = plugins_.begin(); it != plugins_.end(); it++) {
     std::vector<std::vector<bool>> tmp_grid_map = this->getMap();
     it->second->UpdateOrigin(robot_x, robot_y, tmp_grid_map,
-                             it->first == "static");
+        it->first == "static");
 #ifdef TEST
     LOG(INFO) << "test map";
     if (tmp_grid_map.size() > 0) {
@@ -202,7 +203,8 @@ std::vector<std::vector<bool>> Costmap::GetLayeredMap(double robot_x,
 }
 
 void Costmap::Inflation(
-    std::vector<std::vector<unsigned char>>& return_costmap) {
+    std::vector<std::vector<unsigned char>>& return_costmap)
+{
   LOG(INFO) << "Start inflation";
   int limit_x = this->getSize().first;
   int limit_y = this->getSize().second;
@@ -211,7 +213,7 @@ void Costmap::Inflation(
     return;
   }
   std::vector<std::vector<bool>> seen(limit_x,
-                                      std::vector<bool>(limit_y, false));
+      std::vector<bool>(limit_y, false));
   return_costmap = std::vector<std::vector<unsigned char>>(
       limit_x, std::vector<unsigned char>(limit_y, 0));
   std::priority_queue<Cell> que;
@@ -229,7 +231,8 @@ void Costmap::Inflation(
   }
   while (!que.empty()) {
     const Cell t = que.top();
-    if (t.dis != 0) return_costmap[t.mx][t.my] = GetCost(t);
+    if (t.dis != 0)
+      return_costmap[t.mx][t.my] = GetCost(t);
     que.pop();
     if (t.mx > 0)
       EnQueue(t.mx - 1, t.my, t.src_x, t.src_y, seen, que, return_costmap);
@@ -243,7 +246,8 @@ void Costmap::Inflation(
   LOG(INFO) << "Inflation ok";
 }
 std::vector<std::vector<unsigned char>> Costmap::UpdateCostMap(
-    double robot_x, double robot_y, double robot_yaw) {
+    double robot_x, double robot_y, double robot_yaw)
+{
   std::vector<std::vector<unsigned char>> local_map;
   layered_mutex_.lock();
   GetLayeredMap(robot_x, robot_y, robot_yaw);
@@ -251,22 +255,23 @@ std::vector<std::vector<unsigned char>> Costmap::UpdateCostMap(
   Inflation(local_map);
   costmap_need_ = local_map;
 #ifdef TEST
-  if (local_map[local_map.size() / 2][local_map[0].size() / 2] >=
-      INSCRIBED_RADIUS_OBSTACLE)
+  if (local_map[local_map.size() / 2][local_map[0].size() / 2] >= INSCRIBED_RADIUS_OBSTACLE)
     LOG(INFO) << "ERROR cosmap";
 #endif
   bool empty = false;
   for (auto i : local_map)
-    for (auto j : i) empty = empty || (j == LETHAL_OBSTACLE);
+    for (auto j : i)
+      empty = empty || (j == LETHAL_OBSTACLE);
   if (!empty)
     LOG(INFO) << "EMPTY MAP---COSTMAP" << robot_x << " " << robot_y
               << "robot_yaw";
   return local_map;
 }
 void Costmap::EnQueue(int x, int y, int src_x, int src_y,
-                      std::vector<std::vector<bool>>& seen,
-                      std::priority_queue<Cell>& q,
-                      std::vector<std::vector<unsigned char>>& cost_map) {
+    std::vector<std::vector<bool>>& seen,
+    std::priority_queue<Cell>& q,
+    std::vector<std::vector<unsigned char>>& cost_map)
+{
   Cell t(x, y, src_x, src_y, 0);
   GetDistanceInGrid(t);
   if (t.dis * this->getResolution() > inflation_radius_)
@@ -276,7 +281,8 @@ void Costmap::EnQueue(int x, int y, int src_x, int src_y,
     seen[x][y] = true;
   }
 }
-unsigned char Costmap::GetCellCost(double x, double y, int& cx, int& cy) {
+unsigned char Costmap::GetCellCost(double x, double y, int& cx, int& cy)
+{
   cx = -1, cy = -1;
   int ox = this->getXInMap();
   int oy = this->getYInMap();
@@ -284,12 +290,11 @@ unsigned char Costmap::GetCellCost(double x, double y, int& cx, int& cy) {
   int new_y = y / this->getResolution();
   int cost_x = ox - new_x;
   int cost_y = oy - new_y;
-  if (cost_x < 0 || cost_y < 0 || cost_x >= costmap_need_.size() ||
-      (costmap_need_.size() > 0 && cost_y >= costmap_need_[0].size())) {
+  if (cost_x < 0 || cost_y < 0 || cost_x >= costmap_need_.size() || (costmap_need_.size() > 0 && cost_y >= costmap_need_[0].size())) {
     return LETHAL_OBSTACLE;
   } else {
     cx = cost_x, cy = cost_y;
     return costmap_need_[cost_x][cost_y];
   }
 }
-}  // end namespace costmap_2d
+} // end namespace costmap_2d
